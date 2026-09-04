@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mindora.Api/Mindora.Api.csproj" />
+    <Project Path="src/Mindora.Application/Mindora.Application.csproj" />
+    <Project Path="src/Mindora.Domain/Mindora.Domain.csproj" />
+    <Project Path="src/Mindora.Infrastructure/Mindora.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mindora.IntegrationTests/Mindora.IntegrationTests.csproj" />
+    <Project Path="tests/Mindora.UnitTests/Mindora.UnitTests.csproj" />
+  </Folder>
+</Solution>
