@@ -25,6 +25,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<PerformanceMetric> PerformanceMetrics => Set<PerformanceMetric>();
     public DbSet<SessionAnalysisResult> SessionAnalysisResults => Set<SessionAnalysisResult>();
+    public DbSet<ChildLinkingCode> ChildLinkingCodes => Set<ChildLinkingCode>();
 
     // IApplicationDbContext explicit interface implementations
     IQueryable<Child> IApplicationDbContext.Children => Children;
@@ -35,6 +36,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     IQueryable<Session> IApplicationDbContext.Sessions => Sessions;
     IQueryable<PerformanceMetric> IApplicationDbContext.PerformanceMetrics => PerformanceMetrics;
     IQueryable<SessionAnalysisResult> IApplicationDbContext.SessionAnalysisResults => SessionAnalysisResults;
+    IQueryable<ChildLinkingCode> IApplicationDbContext.ChildLinkingCodes => ChildLinkingCodes;
 
     void IApplicationDbContext.Add<TEntity>(TEntity entity) where TEntity : class
     {

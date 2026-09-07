@@ -16,6 +16,7 @@ public interface IApplicationDbContext
     IQueryable<Session> Sessions { get; }
     IQueryable<PerformanceMetric> PerformanceMetrics { get; }
     IQueryable<SessionAnalysisResult> SessionAnalysisResults { get; }
+    IQueryable<ChildLinkingCode> ChildLinkingCodes { get; }
 
     void Add<TEntity>(TEntity entity) where TEntity : class;
     void Remove<TEntity>(TEntity entity) where TEntity : class;

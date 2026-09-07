@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Mindora.Application.Features.Sessions.AbandonSession;
 using Mindora.Application.Features.Sessions.CompleteSession;
 using Mindora.Application.Features.Sessions.GetSessionDetails;
 using Mindora.Application.Features.Sessions.Models;
@@ -59,6 +60,21 @@ public class SessionsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var response = await handler.HandleAsync(sessionId, request, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPost("{sessionId:guid}/abandon")]
+    [ProducesResponseType(typeof(SessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AbandonSession(
+        [FromRoute] Guid sessionId,
+        [FromServices] AbandonSessionHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var response = await handler.HandleAsync(sessionId, cancellationToken);
         return Ok(response);
     }
 

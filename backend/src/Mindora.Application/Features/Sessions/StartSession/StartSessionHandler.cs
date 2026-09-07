@@ -84,7 +84,49 @@ public class StartSessionHandler
             throw new NotFoundException("Activity", request.ActivityId);
         }
 
-        // 4. Create Session deriving authoritative Domain from Activity.Domain
+        // 4. Determine adaptive session parameters from previous session recommendation
+        string targetDifficulty = child.CurrentMovementLevel.ToString();
+        string? adaptiveSettingsJson = activity.AdaptiveSettingsJson;
+
+        var lastAnalysis = (from s in _context.Sessions
+                            join r in _context.SessionAnalysisResults on s.Id equals r.SessionId
+                            where s.ChildId == child.Id && s.Domain == activity.Domain && s.Status == SessionStatus.Completed
+                            orderby s.EndTimeUtc descending
+                            select new { r.RecommendedDifficultyAdjustment, r.AdaptiveParametersJson })
+                           .FirstOrDefault();
+
+        if (lastAnalysis != null)
+        {
+            if (activity.Domain == ActivityDomain.Movement)
+            {
+                var currentLevel = child.CurrentMovementLevel;
+                if (lastAnalysis.RecommendedDifficultyAdjustment == DifficultyAdjustment.Increase)
+                {
+                    targetDifficulty = currentLevel switch
+                    {
+                        DifficultyLevel.Beginner => DifficultyLevel.Intermediate.ToString(),
+                        DifficultyLevel.Intermediate => DifficultyLevel.Advanced.ToString(),
+                        _ => DifficultyLevel.Advanced.ToString()
+                    };
+                }
+                else if (lastAnalysis.RecommendedDifficultyAdjustment == DifficultyAdjustment.Decrease)
+                {
+                    targetDifficulty = currentLevel switch
+                    {
+                        DifficultyLevel.Advanced => DifficultyLevel.Intermediate.ToString(),
+                        DifficultyLevel.Intermediate => DifficultyLevel.Beginner.ToString(),
+                        _ => DifficultyLevel.Beginner.ToString()
+                    };
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(lastAnalysis.AdaptiveParametersJson))
+            {
+                adaptiveSettingsJson = lastAnalysis.AdaptiveParametersJson;
+            }
+        }
+
+        // 5. Create Session deriving authoritative Domain from Activity.Domain
         var session = Session.Start(child.Id, activity.Id, activity.Domain);
         _context.Add(session);
         await _context.SaveChangesAsync(cancellationToken);
@@ -95,6 +137,8 @@ public class StartSessionHandler
             session.ActivityId,
             session.Domain.ToString(),
             session.Status.ToString(),
-            session.StartTimeUtc);
+            session.StartTimeUtc,
+            targetDifficulty,
+            adaptiveSettingsJson);
     }
 }

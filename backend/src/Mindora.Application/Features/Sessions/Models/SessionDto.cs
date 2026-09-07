@@ -6,4 +6,6 @@ public record SessionDto(
     Guid ActivityId,
     string Domain,
     string Status,
-    DateTime StartTimeUtc);
+    DateTime StartTimeUtc,
+    string? TargetDifficulty = null,
+    string? AdaptiveSettingsJson = null);

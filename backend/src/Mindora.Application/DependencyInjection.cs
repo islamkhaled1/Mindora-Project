@@ -21,20 +21,28 @@ public static class DependencyInjection
         services.AddScoped<Features.Children.GetChildDetails.GetChildDetailsHandler>();
         services.AddScoped<Features.Children.AssignDoctor.AssignDoctorHandler>();
         services.AddScoped<Features.Children.SoftDeleteChild.SoftDeleteChildHandler>();
+        services.AddScoped<Features.Children.GenerateLinkingCode.GenerateLinkingCodeHandler>();
 
         // Activities Feature Handlers
         services.AddScoped<Features.Activities.GetActivities.GetActivitiesHandler>();
         services.AddScoped<Features.Activities.GetActivityById.GetActivityByIdHandler>();
+        services.AddScoped<Features.Activities.GetChildActivityPerformance.GetChildActivityPerformanceHandler>();
 
         // Sessions Feature Handlers
         services.AddScoped<Features.Sessions.StartSession.StartSessionHandler>();
         services.AddScoped<Features.Sessions.RecordMetrics.RecordMetricsHandler>();
         services.AddScoped<Features.Sessions.CompleteSession.CompleteSessionHandler>();
         services.AddScoped<Features.Sessions.GetSessionDetails.GetSessionDetailsHandler>();
+        services.AddScoped<Features.Sessions.AbandonSession.AbandonSessionHandler>();
 
         // Progress Feature Handlers
         services.AddScoped<Features.Progress.GetChildProgress.GetChildProgressHandler>();
         services.AddScoped<Features.Progress.GetChildProgressHistory.GetChildProgressHistoryHandler>();
+
+        // Doctor Feature Handlers
+        services.AddScoped<Features.Doctor.GetDoctorDashboard.GetDoctorDashboardHandler>();
+        services.AddScoped<Features.Doctor.GetDoctorChildren.GetDoctorChildrenHandler>();
+        services.AddScoped<Features.Doctor.LinkChild.LinkChildHandler>();
 
         return services;
     }

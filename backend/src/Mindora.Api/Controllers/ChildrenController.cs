@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Mindora.Application.Features.Activities.GetChildActivityPerformance;
+using Mindora.Application.Features.Activities.Models;
 using Mindora.Application.Features.Children.AssignDoctor;
 using Mindora.Application.Features.Children.CreateChild;
+using Mindora.Application.Features.Children.GenerateLinkingCode;
 using Mindora.Application.Features.Children.GetChildDetails;
 using Mindora.Application.Features.Children.GetParentChildren;
 using Mindora.Application.Features.Children.Models;
@@ -53,6 +56,20 @@ public class ChildrenController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("{childId:guid}/activities/performance")]
+    [ProducesResponseType(typeof(IReadOnlyList<ActivityPerformanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetActivityPerformance(
+        [FromRoute] Guid childId,
+        [FromServices] GetChildActivityPerformanceHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var response = await handler.HandleAsync(childId, cancellationToken);
+        return Ok(response);
+    }
+
     [HttpPost("{childId:guid}/assign-doctor")]
     [ProducesResponseType(typeof(DoctorAssignmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -67,6 +84,20 @@ public class ChildrenController : ControllerBase
         CancellationToken cancellationToken)
     {
         var response = await handler.HandleAsync(childId, request, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPost("{childId:guid}/linking-code")]
+    [ProducesResponseType(typeof(ChildLinkingCodeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateLinkingCode(
+        [FromRoute] Guid childId,
+        [FromServices] GenerateLinkingCodeHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var response = await handler.HandleAsync(childId, cancellationToken);
         return Ok(response);
     }
 

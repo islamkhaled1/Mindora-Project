@@ -98,6 +98,9 @@ public static class DependencyInjection
         services.AddHttpClient<ExternalAiProviderClient>();
         services.AddScoped<IAiAnalysisService, ResilientAiAnalysisService>();
 
+        // Abuse Throttling Services
+        services.AddSingleton<ILinkingRateLimiter, LinkingRateLimiter>();
+
         return services;
     }
 }

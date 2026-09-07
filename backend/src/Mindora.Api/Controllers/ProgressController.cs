@@ -32,10 +32,11 @@ public class ProgressController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProgressHistory(
         [FromRoute] Guid childId,
+        [FromQuery] GetChildProgressHistoryRequest request,
         [FromServices] GetChildProgressHistoryHandler handler,
         CancellationToken cancellationToken)
     {
-        var response = await handler.HandleAsync(childId, cancellationToken);
+        var response = await handler.HandleAsync(childId, request, cancellationToken);
         return Ok(response);
     }
 }

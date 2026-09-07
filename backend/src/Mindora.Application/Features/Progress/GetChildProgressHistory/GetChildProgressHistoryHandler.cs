@@ -18,8 +18,13 @@ public class GetChildProgressHistoryHandler
         _context = context;
     }
 
-    public async Task<IReadOnlyList<SessionHistoryPointDto>> HandleAsync(Guid childId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SessionHistoryPointDto>> HandleAsync(
+        Guid childId,
+        GetChildProgressHistoryRequest? request = null,
+        CancellationToken cancellationToken = default)
     {
+        request ??= new GetChildProgressHistoryRequest();
+
         if (!_currentUserService.IsAuthenticated || _currentUserService.UserId == null)
         {
             throw new UnauthorizedException("User is not authenticated.");
@@ -64,19 +69,44 @@ public class GetChildProgressHistoryHandler
             throw new ForbiddenException("You do not have permission to view child progress history.");
         }
 
-        // 3. Query completed sessions ordered chronologically
-        var completedSessions = _context.Sessions
-            .Where(s => s.ChildId == childId && s.Status == SessionStatus.Completed)
+        // 3. Clamp pagination bounds
+        int page = Math.Max(1, request.Page);
+        int pageSize = Math.Clamp(request.PageSize, 1, 100);
+
+        // 4. Build database-efficient query
+        var query = _context.Sessions
+            .Where(s => s.ChildId == childId && s.Status == SessionStatus.Completed);
+
+        if (!string.IsNullOrWhiteSpace(request.Domain) &&
+            Enum.TryParse<ActivityDomain>(request.Domain, ignoreCase: true, out var domainFilter))
+        {
+            query = query.Where(s => s.Domain == domainFilter);
+        }
+
+        if (request.FromDate.HasValue)
+        {
+            query = query.Where(s => s.StartTimeUtc >= request.FromDate.Value);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            query = query.Where(s => s.StartTimeUtc <= request.ToDate.Value);
+        }
+
+        // 5. Apply pagination at query level to prevent loading unbounded history into memory
+        var pagedSessions = query
             .OrderBy(s => s.StartTimeUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToList();
 
-        if (!completedSessions.Any())
+        if (!pagedSessions.Any())
         {
             return Array.Empty<SessionHistoryPointDto>();
         }
 
-        var sessionIds = completedSessions.Select(s => s.Id).ToList();
-        var activityIds = completedSessions.Select(s => s.ActivityId).Distinct().ToList();
+        var sessionIds = pagedSessions.Select(s => s.Id).ToList();
+        var activityIds = pagedSessions.Select(s => s.ActivityId).Distinct().ToList();
 
         var activities = _context.Activities
             .Where(a => activityIds.Contains(a.Id))
@@ -86,7 +116,7 @@ public class GetChildProgressHistoryHandler
             .Where(r => sessionIds.Contains(r.SessionId))
             .ToDictionary(r => r.SessionId);
 
-        var historyPoints = completedSessions.Select(s =>
+        var historyPoints = pagedSessions.Select(s =>
         {
             string title = activities.TryGetValue(s.ActivityId, out var actTitle) ? actTitle : "Activity";
             decimal score = analysisResults.TryGetValue(s.Id, out var analysis) ? analysis.OverallPerformanceScore : 0.00m;
