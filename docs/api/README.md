@@ -1,10 +1,11 @@
-# API Documentation
+# Mindora API Documentation
 
-This directory contains API documentation, integration specifications, and contracts.
+This directory contains complete API contracts, integration specifications, and telemetry definitions for the Mindora Web API.
 
-## Contents & Roadmap
-- **Authentication & Authorization**: Registration, login, JWT token structure, roles (`Parent`, `Doctor`), and refresh token policies.
-- **Children Management**: Endpoints for registering children, managing profiles, and adjusting baseline difficulty.
-- **Session & Activities**: Therapy activity catalogue, starting sessions, recording metrics, and completing evaluations.
-- **Progress Tracking**: Longitudinal progress analytics, domain breakdown (Movement, Speech, Attention), and clinical reports.
-- **AI Contracts**: Schemas for external AI inference endpoints and fallback contracts.
+## Core Documents
+- [API Specification & Integration Contract](./api_specification.md): Complete reference of all 24 implemented endpoints across Authentication, Children Management, Activities, Sessions, Progress, and Doctor Dashboard.
+
+## Client Integration Maps
+- **Flutter Child App**: Authentication, Child profiles, Activities catalogue, Adaptive session lifecycle, Real-time movement telemetry, and Progress summaries.
+- **React + Tailwind Doctor Dashboard**: Authentication, Doctor overview, Assigned children roster, Child details, Longitudinal progress history, and Activity performance analytics.
+
