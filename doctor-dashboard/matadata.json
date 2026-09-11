@@ -1,6 +1,0 @@
-{
-  "name": "سوا - لوحة تحكم الطبيب",
-  "description": "لوحة تحكم طبية متخصصة لمتابعة أطفال الرعاية وتطور الجلسات العلاجية",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
