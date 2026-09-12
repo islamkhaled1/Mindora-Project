@@ -29,7 +29,10 @@ max_levels = 5
 target_radius = 80
 target_x = random.randint(150, 450)
 target_y = random.randint(150, 350)
+
+level_start_time = time.time()
 level_passed_time = 0
+therapy_report = []
 
 while cap.isOpened():
     success, image = cap.read()
@@ -57,23 +60,30 @@ while cap.isOpened():
                 distance = math.hypot(cx - target_x, cy - target_y)
                 
                 if distance < target_radius + 30:
+                    time_taken = round(current_time - level_start_time, 2)
+                    therapy_report.append({"Level": level, "Time (Seconds)": time_taken})
+                    
                     star_color = (0, 255, 0)
                     level += 1
+                    
                     if level <= max_levels:
                         target_radius = max(30, target_radius - 12)
                         target_x = random.randint(100, 500)
                         target_y = random.randint(100, 400)
+                        level_start_time = time.time()
+                        
                     level_passed_time = time.time()
-                    print(f"Level {level-1} Passed!")
 
         if level <= max_levels:
             draw_star(image, (target_x, target_y), target_radius, star_color)
 
-        if current_time - level_passed_time <= 1.5 and 1 < level <= max_levels:
+        if current_time - level_passed_time <= 1.5 and 1 < level <= max_levels + 1:
             cv2.putText(image, "Level Passed!", (150, 240), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
 
     else:
-        cv2.putText(image, "Test Completed!", (100, 240), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+        cv2.putText(image, "Therapy Completed!", (100, 240), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+        if current_time - level_passed_time > 3:
+            break
 
     cv2.imshow("Mindora Motor Therapy Demo", image)
 
@@ -82,3 +92,12 @@ while cap.isOpened():
 
 cap.release()
 cv2.destroyAllWindows()
+
+print("\n--- تقرير الجلسة الحركية (Therapy Report) ---")
+total_time = 0
+for data in therapy_report:
+    print(f"المستوى {data['Level']}: استغرق {data['Time (Seconds)']} ثانية")
+    total_time += data['Time (Seconds)']
+
+print(f"\nإجمالي وقت الجلسة: {round(total_time, 2)} ثانية")
+print(f"متوسط سرعة الاستجابة: {round(total_time/max_levels, 2)} ثانية/مستوى")
