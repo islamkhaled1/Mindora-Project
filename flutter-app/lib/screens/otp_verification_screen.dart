@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/app_text_styles.dart';
-import 'package:sawa/constants.dart';
+import 'package:sawa/app_colors.dart';
 import 'package:sawa/screens/new_password_screen.dart';
 import 'package:sawa/widgets/auth_action_row.dart';
 import 'package:sawa/widgets/back_icon.dart';

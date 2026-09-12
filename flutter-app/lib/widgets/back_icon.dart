@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:sawa/constants.dart';
+import 'package:sawa/app_colors.dart';
 
 class BackIcon extends StatelessWidget {
   const BackIcon({super.key});

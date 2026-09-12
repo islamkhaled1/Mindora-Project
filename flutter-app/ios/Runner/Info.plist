@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>يحتاج التطبيق إلى استخدام الميكروفون لتسجيل نطقك.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>يحتاج التطبيق إلى الوصول إلى الصور لاختيار صورة.</string>
+
+    <key>NSCameraUsageDescription</key>
+    <string>يحتاج التطبيق إلى استخدام الكاميرا لالتقاط صورة.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

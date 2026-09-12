@@ -8,11 +8,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.title,
     this.actions,
     this.height = 50,
+    this.leadingWidth = 56,
   });
   final dynamic leading;
   final dynamic title;
   final dynamic actions;
   final double height;
+  final double leadingWidth;
   @override
   Widget build(BuildContext context) {
     return AppBar(
@@ -22,6 +24,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: leading,
       ),
       toolbarHeight: height.h,
+      leadingWidth: leadingWidth,
       title: title,
       centerTitle: true,
       actions: actions,

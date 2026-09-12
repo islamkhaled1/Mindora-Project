@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:sawa/constants.dart';
+import 'package:sawa/app_colors.dart';
+import 'package:sawa/screens/home_nav_screen.dart';
 import 'package:sawa/screens/onboarding_screen.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
@@ -38,7 +39,7 @@ class SAWA extends StatelessWidget {
       builder: (context, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: OnboardingScreen(),
+          home: HomeNavScreen(),
           builder: EasyLoading.init(),
         );
       },

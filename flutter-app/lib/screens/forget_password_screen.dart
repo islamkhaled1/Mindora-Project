@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/icons/dashicons.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
-import 'package:sawa/constants.dart';
+import 'package:sawa/app_colors.dart';
 import 'package:sawa/screens/log_in_screen.dart';
 import 'package:sawa/screens/otp_verification_screen.dart';
 import 'package:sawa/widgets/auth_action_row.dart';
