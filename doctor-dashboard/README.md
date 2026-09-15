@@ -1,20 +1,32 @@
-# Mindora Doctor Web Dashboard
+# React + TypeScript + Vite
 
-This directory is reserved for the **Mindora Doctor Web Dashboard**.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Overview
-The Doctor Web Dashboard is a clinical interface designed for healthcare professionals, therapists, and doctors monitoring children undergoing rehabilitation with Mindora.
+Currently, two official plugins are available:
 
-## Capabilities & Scope
-- **Patient Monitoring**: Visualizes longitudinal performance metrics across Movement, Speech, and Attention domains.
-- **Therapy & Difficulty Management**: Enables clinicians to evaluate milestone progression and adjust exercise parameters or difficulty baselines.
-- **Reporting**: Provides clinical summaries and session analytics.
-- **API Integration**: Directly consumes the Mindora ASP.NET Core Web API using authenticated, role-authorized (Doctor role) endpoints.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Technology Stack
-- **Framework**: React.js
-- **API Client**: REST / JSON consuming ASP.NET Core Web API endpoints
-- **Authentication**: JWT Bearer authentication issued by the backend
+## React Compiler
 
----
-*Note: Application code will be developed here as part of the frontend roadmap.*
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+```
+
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.

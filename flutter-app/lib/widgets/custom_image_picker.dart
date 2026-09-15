@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/bx.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:sawa/constants.dart';
+import 'package:sawa/app_colors.dart';
 
 class CustomImagePicker extends StatefulWidget {
   final String defaultImage;
@@ -61,39 +61,6 @@ class _CustomImagePickerState extends State<CustomImagePicker> {
 
   @override
   Widget build(BuildContext context) {
-    // return Stack(
-    //   children: [
-    //     CircleAvatar(
-    //       radius: 100,
-    //       backgroundImage: selectedImage != null
-    //           ? FileImage(selectedImage!,)
-    //           : AssetImage(widget.defaultImage,) as ImageProvider,
-    //     ),
-    //     Positioned(
-    //       bottom: 0,
-    //       right: 20,
-
-    //       child: GestureDetector(
-    //         onTap: pickImage,
-    //         child: Container(
-    //           width: 38.w,
-    //           height: 38.h,
-    //           decoration: const BoxDecoration(
-    //             color: Colors.white,
-    //             shape: BoxShape.circle,
-    //           ),
-    //           child: const Center(
-    //             child: Iconify(
-    //               Bx.bxs_camera,
-    //               size: 30,
-    //               color: AppColors.secondaryTextColor,
-    //             ),
-    //           ),
-    //         ),
-    //       ),
-    //     ),
-    //   ],
-    // );
     return Stack(
       children: [
         ClipOval(

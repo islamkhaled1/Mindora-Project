@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EBE4FA" />
+      <stop offset="100%" stop-color="#D9CCF4" />
+    </linearGradient>
+    <linearGradient id="coatGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F3EFFC" />
+    </linearGradient>
+    <linearGradient id="scrubGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7D55C7" />
+      <stop offset="100%" stop-color="#653FA8" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#432F62" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Circular Base -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" />
+
+  <g filter="url(#shadow)">
+    <!-- Shoulders & Doctor Coat -->
+    <path d="M120 450 C120 370, 170 330, 256 330 C342 330, 392 370, 392 450 Z" fill="url(#coatGrad)" />
+    
+    <!-- Medical Scrub V-Neck -->
+    <path d="M210 330 L256 395 L302 330 Z" fill="url(#scrubGrad)" />
+
+    <!-- Stethoscope around neck -->
+    <path d="M200 330 C200 385, 230 420, 256 420 C282 420, 312 385, 312 330" fill="none" stroke="#3D3455" stroke-width="14" stroke-linecap="round" />
+    <path d="M256 420 L256 445" fill="none" stroke="#3D3455" stroke-width="14" stroke-linecap="round" />
+    <circle cx="256" cy="455" r="16" fill="#8456D2" stroke="#FFFFFF" stroke-width="4" />
+
+    <!-- Head & Neck -->
+    <rect x="232" y="270" width="48" height="60" rx="10" fill="#E8D7C9" />
+    
+    <!-- Face Silhouette / Neutral Professional Head -->
+    <ellipse cx="256" cy="210" rx="65" ry="78" fill="#F0E1D5" />
+    
+    <!-- Hair / Professional Cap/Hair contour -->
+    <path d="M191 200 C191 130, 220 120, 256 120 C292 120, 321 130, 321 200 C310 170, 280 155, 256 155 C232 155, 202 170, 191 200 Z" fill="#432F62" />
+
+    <!-- Medical Caduceus / Cross Badge on Coat -->
+    <circle cx="340" cy="390" r="16" fill="#8456D2" />
+    <path d="M340 380 L340 400 M330 390 L350 390" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  </g>
+</svg>
