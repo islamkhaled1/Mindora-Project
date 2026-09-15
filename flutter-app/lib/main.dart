@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:sawa/app_colors.dart';
-import 'package:sawa/screens/home_nav_screen.dart';
-import 'package:sawa/screens/onboarding_screen.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'core/state/auth_state.dart';
 
@@ -40,10 +38,15 @@ class SAWA extends StatelessWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          home: HomeNavScreen(),
-          builder: EasyLoading.init(),
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: OnboardingScreen(),
+            builder: _easyLoadingBuilder,
+          ),
         );
       },
     );

@@ -8,7 +8,7 @@
     <string>يحتاج التطبيق إلى الوصول إلى الصور لاختيار صورة.</string>
 
     <key>NSCameraUsageDescription</key>
-    <string>يحتاج التطبيق إلى استخدام الكاميرا لالتقاط صورة.</string>
+    <string>يحتاج التطبيق إلى استخدام الكاميرا لتوفير ميزات وتجربة أفضل.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
