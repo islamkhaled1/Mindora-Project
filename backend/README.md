@@ -72,23 +72,66 @@ Mindora.Api              ← REST controllers, middleware, DI composition, RFC 7
 
 ---
 
-## 🤖 Gemini AI Integration
+## 🤖 AI Architecture — Two Distinct Subsystems
 
-After each therapy session, the backend automatically:
-1. Receives raw metrics (accuracy %, reps, reaction time ms)
-2. Constructs a structured prompt for **Google Gemini**
-3. Receives JSON analysis: `overallPerformanceScore`, `recommendedDifficultyAdjustment`, `supportiveObservations`, `fatigueObserved`
-4. Persists the analysis result and returns it to the Flutter app
+### 1. Advisory Chat (`POST /api/ai/chat`) — Google Gemini
 
-If Gemini is unavailable, a **deterministic fallback engine** computes the analysis locally — ensuring zero downtime.
+The parent advisory chat calls **Google Gemini** (`gemini-3.6-flash`) directly via a typed `GeminiChatClient`. The system prompt is carefully engineered, not generic:
 
----
+```
+"أنت 'مساعد ميندورا الذكي' — رفيق ومرشد داعم لأولياء أمور أطفال متلازمة داون.
+مهمتك تقديم إرشادات ونصائح تدريبية وتأهيلية مبسطة بأسلوب عربي ودودة ومحفزة.
+ركز على التحفيز الحركي والنطق والتواصل والاستقلالية اليومية.
+الردود إرشادية وليست تشخيصاً طبياً — في حال الأدوية أو حالات طارئة، وجّه لطبيب مختص."
+```
 
-## 📧 Email Service (Brevo SMTP)
+Design decisions:
+- **Clinically responsible** — explicitly prevents the model from acting as a medical authority
+- **Domain-constrained** — scoped to motor, speech, communication, and daily independence
+- **Egyptian Arabic dialect** — culturally appropriate for target users
+- **Temperature 0.7** — balances creativity with factual reliability
+- **Max 1024 tokens** — keeps responses focused and readable on mobile
 
-- OTP codes for email verification (6-digit, 15-min expiry)
-- Password reset links with secure tokens
-- HTML-templated emails
+### 2. Session Analysis — Resilient Multi-Layer Engine
+
+Session analysis uses a **ResilientAiAnalysisService** (Decorator pattern):
+
+```
+CompleteSessionHandler
+    ↓ gathers all metrics (stored + request-time)
+    ↓ builds AiSessionAnalysisRequest (child age, domain, difficulty, metrics[])
+    ↓ executed OUTSIDE DB transaction (critical — prevents AI timeout from killing DB write)
+ResilientAiAnalysisService
+    ├── ExternalAiProviderClient (configurable endpoint, 4s timeout)
+    │       ↓ on success → validated scored JSON result
+    └── MockAiAnalysisService (deterministic fallback, always succeeds)
+            ↓ multi-dimensional heuristic analysis
+```
+
+The **deterministic heuristic engine** (`MockAiAnalysisService`) is NOT a stub — it implements real clinical logic:
+
+| Signal | Analysis |
+|--------|----------|
+| `AccuracyPercentage` | Primary performance score |
+| `SpeechClarityScore` | Combined with accuracy for speech domain |
+| `ReactionTimeMs > 3000ms` + low score | Fatigue flag → score reduction + gentler pacing |
+| `RepetitionCount` | Converted to score for movement domain |
+| `AttentionDurationSeconds` | Converted to score for attention domain |
+
+Outputs per session:
+- `overallPerformanceScore` — domain-aware weighted score (0–100)
+- `recommendedDifficultyAdjustment` — `Increase` / `Maintain` / `Decrease`
+- `fatigueObserved` — boolean, triggers pacing parameter changes
+- `supportiveObservations` — non-medical, encouraging text matched to domain and performance tier
+- `adaptiveParametersJson` — `targetPacingSeconds`, `visualCueLevel`, `repetitionTarget`
+
+### Key Engineering Decisions
+
+- **AI executes OUTSIDE database transaction** — prevents AI timeout (4–30s) from holding DB locks or rolling back session completion
+- **Idempotency** — if session already `Completed`, returns existing result without re-invoking AI (safe for retries)
+- **IDOR Protection** — parent can only analyze their own child's sessions; doctor only if actively assigned
+- **Score boundary validation** — external AI scores are validated `[0, 100]` before trust; invalid payloads trigger fallback
+- **Zero demo downtime** — if Gemini/external AI is down, the heuristic engine produces a valid, meaningful result
 
 ---
 

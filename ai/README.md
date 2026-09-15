@@ -86,17 +86,35 @@ AWAITING_REACH → REACHED → COOLDOWN → SPAWN_NEW → AWAITING_REACH → ...
 
 ---
 
-## 💬 AI Chatbot
+## 💬 AI Chatbot — Prompt Design
 
-**File:** `chatbot.py`
+**File:** `chatbot.py` (prototype) → Production: `GeminiChatClient` in backend
 
-- Powered by **Meta LLaMA 3.1 8B Instruct** via OpenRouter API
-- System prompt configures the bot as *"مساعد ميندورا الذكي"* — a Down syndrome therapy advisor
-- Responds in **Egyptian Arabic dialect** with warm, encouraging tone
-- Maintains conversation history for contextual multi-turn dialogue
-- Safeguards: redirects medical/emergency questions to qualified doctors
+The chatbot is NOT a generic "answer anything" wrapper. The system prompt encodes four deliberate constraints:
 
-> **Note:** Production advisory chat in the Flutter app uses **Google Gemini** via the backend. This module is the research/prototype chatbot.
+```python
+"أنت 'مساعد ميندورا الذكي' (Mindora AI)، رفيق ومرشد داعم لأولياء أمور أطفال متلازمة داون.
+ مهمتك تقديم إرشادات ونصائح تدريبية وتأهيلية مبسطة بأسلوب عربي ولهجة مصرية ودودة ومحفزة لولي الأمر.
+ ركز على التحفيز الحركي والنطق والتواصل والاستقلالية اليومية.
+ الردود إرشادية وتوعوية وليست تشخيصاً طبياً أو وصفة علاجية ولا تغني عن الاستشارة الطبية السريرية.
+ في حال استفسار ولي الأمر عن أدوية أو أعراض مرضية حادة أو حالات طارئة،
+ انصحه بلطف بالتواصل الفوري مع الطبيب المختص أو مراجعة العيادة."
+```
+
+**Why each constraint exists:**
+
+| Constraint | Reason |
+|-----------|--------|
+| **Egyptian Arabic dialect** | The target demographic is Egyptian parents; formal Arabic creates unnecessary distance |
+| **Domain-scoped** (motor, speech, communication, daily independence) | Prevents the model from wandering into general parenting or unrelated topics |
+| **Non-diagnostic guardrail** | Down syndrome parents often ask about medications and symptoms — the model must not act as a clinician |
+| **Emergency redirect** | If a parent describes an acute symptom or emergency, the model must route to a doctor, not attempt to answer |
+| **Multi-turn memory** | `chat_history[]` is maintained in-session so the model has context across the conversation |
+
+Production deployment (via backend) uses **Gemini** (`gemini-3.6-flash`) instead of LLaMA for:
+- Better Arabic language quality
+- Lower latency on mobile
+- Server-side key management (key never exposed to the app)
 
 ---
 
