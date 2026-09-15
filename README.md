@@ -1,139 +1,193 @@
-# Mindora Project
-
-Mindora is an AI-assisted rehabilitation, developmental support, and progress-tracking platform designed specifically for children with Down syndrome. The platform empowers children, supports parents in everyday routines, and gives healthcare professionals actionable clinical insights.
-
-## Core Philosophy
+# 🌟 Mindora — AI-Powered Rehabilitation Platform for Children with Down Syndrome
 
 > *"The App adapts to the child, not the child adapting to the App."*
 
-Mindora emphasizes individualized adaptation, dynamic difficulty scaling, and positive reinforcement to match each child's developmental pace and sensory preferences.
-
-## Three Focus Areas
-
-1. **Movement**: Fine and gross motor coordination, balance exercises, posture guidance, and physical activity routines.
-2. **Speech**: Articulation practice, phonological awareness, vocabulary building, and conversational exercises.
-3. **Attention**: Visual and auditory focus training, cognitive engagement tasks, and sustained task attention exercises.
+**Mindora** is a full-stack AI-powered rehabilitation and developmental support platform purpose-built for children with Down syndrome. It connects children, parents, and licensed therapists in a unified ecosystem powered by real-time computer vision, Gemini AI, and clinical session analytics.
 
 ---
 
-## Monorepo Repository Structure
+## 🎥 Live Deployments
 
-```text
-Mindora Project/
-├── backend/                  # ASP.NET Core Web API, Domain, Application, Infrastructure & Tests
-│   ├── Mindora.sln
-│   ├── Mindora.slnx
-│   ├── src/
-│   │   ├── Mindora.Domain/
-│   │   ├── Mindora.Application/
-│   │   ├── Mindora.Infrastructure/
-│   │   └── Mindora.Api/
-│   └── tests/
-│       ├── Mindora.UnitTests/
-│       └── Mindora.IntegrationTests/
-│
-├── doctor-dashboard/         # React.js web dashboard for therapists, doctors, and clinicians
-├── flutter-app/              # Flutter mobile application for Child and Parent experiences
-├── ai/                       # Standalone AI/ML models, Python inference services, and training pipelines
-├── docs/                     # Project-level architecture, API, and process documentation
-│   ├── architecture/
-│   ├── api/
-│   └── project/
-├── .gitignore                # Unified monorepo ignore rules
-└── README.md                 # Project root documentation
+| Component | URL |
+|-----------|-----|
+| 📱 Flutter App (Android APK) | `flutter-app/build/app/outputs/flutter-apk/app-release.apk` |
+| 🌐 Doctor Dashboard | https://doctor-dashboard-kappa-dun.vercel.app |
+| ⚙️ Backend API | https://sawa-app.runasp.net |
+| 🏥 API Health | https://sawa-app.runasp.net/health |
+
+---
+
+## 🧩 Platform Overview
+
+Mindora addresses three core developmental domains for children with Down syndrome:
+
+| Domain | Exercise | Technology |
+|--------|----------|-----------|
+| 🏃 **Movement** | اتبع الحركة — Hand-tracking target game | MediaPipe Hands (on-device, real-time) |
+| 🧠 **Attention** | اسمع وابحث — Audio-visual matching rounds | Custom attention engine + TTS |
+| 🗣️ **Speech** | قولها معايا — Articulation practice | MFCC + scikit-learn classifier |
+
+---
+
+## 🏗️ System Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    MINDORA PLATFORM                          │
+├─────────────────┬──────────────┬────────────────────────────┤
+│  Flutter App    │   Backend    │    Doctor Dashboard        │
+│  (Android/iOS)  │  ASP.NET 10  │    React 19 + TypeScript   │
+│                 │  MSSQL       │    Vercel                  │
+│  Parent Mode    │  JWT + Identity    Live at Vercel URL     │
+│  Child Mode     │  Gemini AI   │                            │
+│  MediaPipe AI   │  Brevo SMTP  │                            │
+└────────┬────────┴──────┬───────┴────────────────────────────┘
+         │               │
+         └───────────────┘
+              REST API
+         https://sawa-app.runasp.net
 ```
 
 ---
 
-## Technology Direction
+## 📁 Monorepo Structure
 
-- **Backend**:
-  - ASP.NET Core Web API
-  - .NET 10
-  - Entity Framework Core 10
-  - Microsoft SQL Server
-  - ASP.NET Core Identity
-  - JWT Bearer Authentication
-  - FluentValidation
-- **Mobile App**:
-  - Flutter (Dart) for cross-platform iOS and Android experiences (Child interactive mode & Parent monitoring mode)
-- **Doctor Web Dashboard**:
-  - React.js consuming the ASP.NET Core Web API
-- **AI / Machine Learning**:
-  - Dedicated AI/model implementations (computer vision, acoustic speech analysis, attention tracking) integrated through backend contracts
+```
+Mindora Project/
+├── backend/               ← ASP.NET Core 10 Web API (Clean Architecture)
+│   ├── src/
+│   │   ├── Mindora.Domain/        ← Entities, value objects (zero dependencies)
+│   │   ├── Mindora.Application/   ← CQRS handlers, use cases, FluentValidation
+│   │   ├── Mindora.Infrastructure/← EF Core, Identity, JWT, Gemini, Brevo SMTP
+│   │   └── Mindora.Api/           ← REST controllers, middleware, DI
+│   └── tests/                     ← Unit + Integration tests
+│
+├── flutter-app/           ← Flutter mobile app (Android + iOS)
+│   └── lib/
+│       ├── core/          ← API client, services, models, auth state
+│       ├── features/      ← movement/ (MediaPipe engine, Dart port)
+│       ├── screens/       ← 42 production screens
+│       └── widgets/       ← Design system components
+│
+├── doctor-dashboard/      ← React + TypeScript SPA (Vite + Tailwind CSS v4)
+│   └── src/
+│       ├── pages/         ← 11 pages (auth, connections, children, progress)
+│       ├── api/           ← Typed fetch-based API client
+│       └── components/    ← Shared UI components
+│
+├── ai/                    ← Python AI/ML models & inference
+│   ├── movement_engine.py ← Deterministic state machine (ported to Dart)
+│   ├── computervision.py  ← MediaPipe desktop demo
+│   ├── chatbot.py         ← LLaMA 3.1 Arabic advisory chatbot
+│   ├── live_speech.py     ← MFCC speech recognition
+│   └── speech_model.pkl   ← Pre-trained sklearn classifier
+│
+└── docs/                  ← Architecture, API, and process documentation
+```
 
 ---
 
-## Backend Architecture
+## 🌟 Key Technical Highlights
 
-The backend is built upon clean, enterprise architectural patterns:
+### 1. On-Device AI (Zero Latency Movement Tracking)
+The `MovementEngine` algorithm was developed in Python (`ai/movement_engine.py`) then **ported to Dart** and runs entirely on the child's device with no internet required during exercises. MediaPipe Hands detects 21 hand landmarks at 30+ FPS, feeding a 4-state deterministic machine that tracks accuracy, reaction time, and repetition count in real time.
 
-- **Modular Monolith**: Enforces logical boundary separation between functional capabilities while maintaining deployment simplicity.
-- **Vertical Slice Architecture**: Features are organized cohesively by intent, grouping commands, queries, validators, and handlers.
-- **Clean Layer Separation**:
-  - `Mindora.Domain`: Pure domain entities, value objects, domain events, and business rules (zero external dependencies).
-  - `Mindora.Application`: Use cases, CQRS requests/handlers, DTOs, interfaces, and FluentValidation rules.
-  - `Mindora.Infrastructure`: EF Core DbContext, migrations, ASP.NET Core Identity, JWT token generation, external AI integration, and database seeding.
-  - `Mindora.Api`: REST controllers, middleware, global RFC 7807 exception handling, and dependency injection composition.
+### 2. Gemini AI Session Analysis
+After every therapy session, the backend automatically calls **Google Gemini** with the child's raw metrics and receives structured JSON:
+- `overallPerformanceScore` — displayed on the results screen
+- `recommendedDifficultyAdjustment` — Increase / Maintain / Decrease
+- `supportiveObservations` — personalized Arabic feedback
+- `fatigueObserved` — boolean flag for parent awareness
+
+A deterministic fallback engine ensures zero downtime if Gemini is unavailable.
+
+### 3. Full Clinical Session Lifecycle
+```
+Start Session → Live Exercise → Submit Metrics → AI Analysis → 
+Encouragement → Results → Parent Rating → Doctor Review
+```
+
+Every step is persisted to SQL Server and visible to the connected doctor on the web dashboard.
+
+### 4. Brevo SMTP Transactional Email
+All email verification, OTP delivery, and password reset links are handled via Brevo SMTP with HTML-templated emails in Arabic.
+
+### 5. Production-Ready Security
+- JWT Bearer + ASP.NET Core Identity
+- Role-based auth: Parent / Doctor / Admin
+- Encrypted token storage (Android Keystore via `flutter_secure_storage`)
+- Zero secrets in source code (all via environment variables)
+- RFC 7807 Problem Details for consistent API error responses
 
 ---
 
-## Local Development & Secret Configuration
+## 🚀 Quick Start
 
-To ensure zero-secret repository hygiene, production and development JWT secrets are not committed to source control.
-
-The backend looks for the configuration key:
-- Configuration path: `Jwt:SecretKey`
-- Environment variable format: `Jwt__SecretKey`
-
-### Setting up Your Local Secret
-
-Configure a local development key (minimum 32 characters) using **.NET User Secrets** (recommended):
-
+### Backend
 ```powershell
 cd backend/src/Mindora.Api
-dotnet user-secrets set "Jwt:SecretKey" "YourDevelopmentSecretKeyWithAtLeast32Chars!"
+dotnet user-secrets set "Jwt:SecretKey" "YourDevSecretKey_AtLeast32Characters!"
+dotnet run
+# → http://localhost:5222
 ```
 
-Alternatively, set an environment variable in your terminal session:
+### Flutter App
+```bash
+cd flutter-app
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5222
+```
 
-```powershell
-# PowerShell
-$env:Jwt__SecretKey = "YourDevelopmentSecretKeyWithAtLeast32Chars!"
+### Doctor Dashboard
+```bash
+cd doctor-dashboard
+npm install
+npm run dev
+# → http://localhost:5173
+```
 
-# Bash / Linux / macOS
-export Jwt__SecretKey="YourDevelopmentSecretKeyWithAtLeast32Chars!"
+### AI Module
+```bash
+cd ai
+pip install -r requirements.txt
+python computervision.py    # Movement demo (requires webcam)
+python chatbot.py           # Arabic chatbot
+python live_speech.py       # Speech recognition (requires mic)
 ```
 
 ---
 
-## Team Development & Git Workflow
+## 👥 Team & Domains
 
-To maintain a clean and reliable codebase across teams:
-
-- **Feature Branching**: Each team member works on an isolated branch following area naming conventions:
-  - `feature/backend-<feature-name>`
-  - `feature/flutter-<feature-name>`
-  - `feature/dashboard-<feature-name>`
-  - `feature/ai-<feature-name>`
-- **Logical Commits**: Make concise, meaningful, atomic commits for completed changes.
-- **Pre-Push Validation**: Always build and test code locally before pushing to the remote.
-- **Pull Requests (PRs)**: All merges into `main` require a reviewed Pull Request.
-- **Main Branch Protection**: Avoid committing directly or pushing unfinished work to `main`.
+| Domain | Component |
+|--------|-----------|
+| Backend & Architecture | ASP.NET Core API + Clean Architecture |
+| Mobile Development | Flutter (Dart) — Child & Parent experience |
+| Web Development | React + TypeScript — Doctor Dashboard |
+| AI / ML Engineering | Python — MediaPipe, Speech, LLM Chatbot |
 
 ---
 
-## Verification & Build Commands
+## 🏥 Clinical Impact
 
-Ensure the .NET 10 SDK is installed, then execute:
+Mindora is not a generic app — it is purpose-built for Down syndrome rehabilitation:
 
-```powershell
-# Restore backend packages
-dotnet restore backend/Mindora.sln
+- **Adaptive difficulty** — AI adjusts exercise challenge based on real performance, not fixed schedules
+- **Positive reinforcement** — Encouragement screens, celebration animations, supportive AI observations
+- **Clinician oversight** — Doctors review AI-analyzed reports, not raw data — saving clinical time
+- **Parent empowerment** — Arabic-language AI advisor guides parents between sessions
+- **Zero technical barrier** — Children interact through movement and sound, no reading required
 
-# Build the complete solution
-dotnet build backend/Mindora.sln
+---
 
-# Run all unit and integration test suites
-dotnet test backend/Mindora.sln
-```
+## 📊 Production Statistics
+
+| Metric | Value |
+|--------|-------|
+| Backend uptime | MonsterASP.NET (24/7) |
+| API endpoints | 25+ REST endpoints |
+| Flutter screens | 42 production screens |
+| Doctor Dashboard pages | 11 pages |
+| APK size | 112 MB (release, signed) |
+| AI models | MediaPipe (7.8MB), Speech classifier (436KB) |
+| Test coverage | Unit + Integration tests (backend + Flutter) |
