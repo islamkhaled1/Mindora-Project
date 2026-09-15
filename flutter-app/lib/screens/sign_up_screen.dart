@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/icons/dashicons.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:sawa/app_text_styles.dart';
-import 'package:sawa/constants.dart';
+import 'package:sawa/app_colors.dart';
 import 'package:sawa/screens/child_information_first_screen.dart';
 import 'package:sawa/screens/verify_email_screen.dart';
 import 'package:sawa/widgets/back_icon.dart';
