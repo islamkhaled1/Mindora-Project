@@ -1,5 +1,7 @@
 # 🧠 Mindora Backend — ASP.NET Core Web API
 
+![Live](https://img.shields.io/badge/API-Live-brightgreen) ![Platform](https://img.shields.io/badge/.NET-10-purple)
+
 > **Production URL:** https://sawa-app.runasp.net  
 > **Health Check:** https://sawa-app.runasp.net/health
 
