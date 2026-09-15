@@ -11,7 +11,7 @@ class CustomElevatedButton extends StatelessWidget {
     this.height = 45,
     this.width = double.infinity,
     this.isLoading = false,
-    this.backgroundColor = const Color(0xff8456D2),
+    this.backgroundColor = AppColors.primaryColor,
     this.textColor = Colors.white,
   });
 
@@ -32,9 +32,7 @@ class CustomElevatedButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
-          disabledBackgroundColor: const Color(
-            0xff8456D2,
-          ).withValues(alpha: 0.6),
+          disabledBackgroundColor: AppColors.primaryColor.withValues(alpha: 0.6),
           shadowColor: Colors.black,
           elevation: 5,
           shape: RoundedRectangleBorder(

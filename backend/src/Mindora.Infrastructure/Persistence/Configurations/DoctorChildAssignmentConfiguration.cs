@@ -24,6 +24,13 @@ public class DoctorChildAssignmentConfiguration : IEntityTypeConfiguration<Docto
         builder.Property(a => a.IsActive)
             .IsRequired();
 
+        builder.Property(a => a.DoctorNotes)
+            .HasMaxLength(2000)
+            .IsRequired(false);
+
+        builder.Property(a => a.DoctorNotesUpdatedAtUtc)
+            .IsRequired(false);
+
         // Index on (DoctorId, ChildId) for efficient patient roster queries
         builder.HasIndex(a => new { a.DoctorId, a.ChildId });
 

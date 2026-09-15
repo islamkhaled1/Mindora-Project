@@ -45,7 +45,7 @@ class PractiseInstructionMovement extends StatelessWidget {
                     'تحسين مهارات التحكم بالحركة والتركيز لدى\n الطفل من خلال التفاعل الحركي مع العناصر \nالممتعة على الشاشة.',
               ),
               SizedBox(height: 24.h),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: 260.h,
                 child: ExerciseTipsStack(
@@ -93,7 +93,9 @@ class PractiseInstructionMovement extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MovementScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const MovementScreen(),
+                    ),
                   );
                 },
               ),

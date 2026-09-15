@@ -191,11 +191,56 @@ namespace Mindora.Infrastructure.Migrations
                     b.ToTable("Activities", (string)null);
                 });
 
+            modelBuilder.Entity("Mindora.Domain.Entities.BaselineAssessment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CognitiveScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("CommunicationScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("EmotionalScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("MotorScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("OverallScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildId");
+
+                    b.HasIndex("ChildId", "CompletedAtUtc");
+
+                    b.ToTable("BaselineAssessments", (string)null);
+                });
+
             modelBuilder.Entity("Mindora.Domain.Entities.Child", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -212,10 +257,23 @@ namespace Mindora.Infrastructure.Migrations
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("date");
 
+                    b.Property<string>("Diagnosis")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("FocusDurationMinutes")
+                        .HasColumnType("int");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("Gender")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HearingStatus")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -223,9 +281,22 @@ namespace Mindora.Infrastructure.Migrations
                     b.Property<Guid>("ParentId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int?>("PreferredActivityType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PreferredPracticeTime")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("SupportLevel")
+                        .HasColumnType("int");
+
                     b.Property<string>("SupportNotes")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("VisionStatus")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -290,6 +361,13 @@ namespace Mindora.Infrastructure.Migrations
                     b.Property<Guid>("DoctorId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("DoctorNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("DoctorNotesUpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -300,6 +378,41 @@ namespace Mindora.Infrastructure.Migrations
                     b.HasIndex("DoctorId", "ChildId");
 
                     b.ToTable("DoctorChildAssignments", (string)null);
+                });
+
+            modelBuilder.Entity("Mindora.Domain.Entities.DoctorLinkRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RespondedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("DoctorId", "Status");
+
+                    b.HasIndex("ChildId", "DoctorId", "Status");
+
+                    b.ToTable("DoctorLinkRequests", (string)null);
                 });
 
             modelBuilder.Entity("Mindora.Domain.Entities.DoctorProfile", b =>
@@ -315,9 +428,17 @@ namespace Mindora.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("Gender")
+                        .HasColumnType("int");
+
                     b.Property<string>("LicenseNumber")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReferralCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Specialization")
                         .IsRequired()
@@ -329,10 +450,67 @@ namespace Mindora.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ReferralCode")
+                        .IsUnique();
+
                     b.HasIndex("UserId")
                         .IsUnique();
 
                     b.ToTable("DoctorProfiles", (string)null);
+                });
+
+            modelBuilder.Entity("Mindora.Domain.Entities.EmailVerificationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastRequestedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OtpExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OtpHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("Platform")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("VerifiedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email", "Platform");
+
+                    b.HasIndex("UserId", "Platform")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1");
+
+                    b.ToTable("EmailVerificationTokens", (string)null);
                 });
 
             modelBuilder.Entity("Mindora.Domain.Entities.ParentProfile", b =>
@@ -357,6 +535,64 @@ namespace Mindora.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("ParentProfiles", (string)null);
+                });
+
+            modelBuilder.Entity("Mindora.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("IsOtpVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("OtpAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("OtpExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OtpHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("OtpVerifiedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ResetTokenExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResetTokenHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResetTokenHash");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Email", "IsUsed");
+
+                    b.ToTable("PasswordResetTokens", (string)null);
                 });
 
             modelBuilder.Entity("Mindora.Domain.Entities.PerformanceMetric", b =>
@@ -407,6 +643,13 @@ namespace Mindora.Infrastructure.Migrations
 
                     b.Property<DateTime?>("EndTimeUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ParentNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("ParentRating")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("StartTimeUtc")
                         .HasColumnType("datetime2");
@@ -591,6 +834,15 @@ namespace Mindora.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Mindora.Domain.Entities.BaselineAssessment", b =>
+                {
+                    b.HasOne("Mindora.Domain.Entities.Child", null)
+                        .WithMany()
+                        .HasForeignKey("ChildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Mindora.Domain.Entities.Child", b =>
                 {
                     b.HasOne("Mindora.Domain.Entities.ParentProfile", null)
@@ -629,6 +881,27 @@ namespace Mindora.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Mindora.Domain.Entities.DoctorLinkRequest", b =>
+                {
+                    b.HasOne("Mindora.Domain.Entities.Child", null)
+                        .WithMany()
+                        .HasForeignKey("ChildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Mindora.Domain.Entities.DoctorProfile", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Mindora.Domain.Entities.ParentProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Mindora.Domain.Entities.DoctorProfile", b =>
                 {
                     b.HasOne("Mindora.Infrastructure.Identity.ApplicationUser", null)
@@ -638,11 +911,29 @@ namespace Mindora.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Mindora.Domain.Entities.EmailVerificationToken", b =>
+                {
+                    b.HasOne("Mindora.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Mindora.Domain.Entities.ParentProfile", b =>
                 {
                     b.HasOne("Mindora.Infrastructure.Identity.ApplicationUser", null)
                         .WithOne()
                         .HasForeignKey("Mindora.Domain.Entities.ParentProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Mindora.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("Mindora.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

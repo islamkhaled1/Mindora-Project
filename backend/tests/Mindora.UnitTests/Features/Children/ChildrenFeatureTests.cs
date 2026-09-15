@@ -14,6 +14,7 @@ using Mindora.Application.Features.Children.AssignDoctor;
 using Mindora.Application.Features.Children.CreateChild;
 using Mindora.Application.Features.Children.GetChildDetails;
 using Mindora.Application.Features.Children.GetParentChildren;
+using Mindora.Application.Features.Children.LinkDoctor;
 using Mindora.Application.Features.Children.SoftDeleteChild;
 using Mindora.Domain.Entities;
 using Mindora.Domain.Enums;
@@ -374,5 +375,99 @@ public class ChildrenFeatureTests : IDisposable
 
         // Act & Assert (Must throw NotFoundException to prevent IDOR disclosure)
         await Assert.ThrowsAsync<NotFoundException>(() => deleteHandler.HandleAsync(childB.Id));
+    }
+
+    [Fact]
+    public async Task CreateChild_With_Extended_Profile_Fields_Succeeds_And_Returns_All_Fields()
+    {
+        // Arrange
+        var (parentId, profileId) = await CreateParentAsync("parent_extended@test.com", "Parent Extended");
+        SetCurrentUser(parentId, "parent_extended@test.com", "Parent Extended", UserRole.Parent, profileId);
+
+        var handler = _serviceProvider.GetRequiredService<CreateChildHandler>();
+        var request = new CreateChildRequest(
+            FullName: "Sami Zaki",
+            DateOfBirth: new DateOnly(2019, 5, 12),
+            SupportNotes: "Responds to rhythmic visual prompts.",
+            BaselineMovementLevel: DifficultyLevel.Intermediate,
+            BaselineSpeechLevel: DifficultyLevel.Beginner,
+            BaselineAttentionLevel: DifficultyLevel.Intermediate,
+            Gender: Gender.Boy,
+            Diagnosis: "Sensory Processing Sensitivity",
+            AvatarUrl: "https://mindora.app/avatars/sami.png",
+            SupportLevel: SupportLevel.Moderate,
+            HearingStatus: SensoryStatus.Normal,
+            VisionStatus: SensoryStatus.Normal,
+            FocusDurationMinutes: 12,
+            PreferredPracticeTime: "10:00 - 11:00 AM",
+            PreferredActivityType: ActivityTypePreference.Games);
+
+        // Act
+        var result = await handler.HandleAsync(request);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Sami Zaki", result.FullName);
+        Assert.Equal("Boy", result.Gender);
+        Assert.Equal("Sensory Processing Sensitivity", result.Diagnosis);
+        Assert.Equal("https://mindora.app/avatars/sami.png", result.AvatarUrl);
+        Assert.Equal("Moderate", result.SupportLevel);
+        Assert.Equal("Normal", result.HearingStatus);
+        Assert.Equal("Normal", result.VisionStatus);
+        Assert.Equal(12, result.FocusDurationMinutes);
+        Assert.Equal("10:00 - 11:00 AM", result.PreferredPracticeTime);
+        Assert.Equal("Games", result.PreferredActivityType);
+    }
+
+    [Fact]
+    public async Task LinkDoctor_By_ReferralCode_Creates_Pending_Request_For_Owning_Parent()
+    {
+        // Arrange
+        var (parentId, profileId) = await CreateParentAsync("parent_link_code@test.com", "Parent Linker");
+        var (doctorId, doctorProfileId) = await CreateDoctorAsync("doc_specialist@test.com", "Dr. Zaki");
+
+        // Doctor referral code lookup
+        var doctorProfile = await _dbContext.DoctorProfiles.FirstAsync(d => d.Id == doctorProfileId);
+        var referralCode = doctorProfile.ReferralCode;
+
+        // Create child for parent
+        SetCurrentUser(parentId, "parent_link_code@test.com", "Parent Linker", UserRole.Parent, profileId);
+        var createChildHandler = _serviceProvider.GetRequiredService<CreateChildHandler>();
+        var child = await createChildHandler.HandleAsync(new CreateChildRequest("Amir", new DateOnly(2020, 1, 1), null, DifficultyLevel.Beginner, DifficultyLevel.Beginner, DifficultyLevel.Beginner));
+
+        // Act: Parent submits doctor code -> creates Pending request
+        var linkHandler = _serviceProvider.GetRequiredService<LinkDoctorByCodeHandler>();
+        var requestDto = await linkHandler.HandleAsync(child.Id, new LinkDoctorByCodeRequest(referralCode));
+
+        // Assert: Pending request created, no immediate assignment
+        Assert.NotNull(requestDto);
+        Assert.Equal(doctorProfileId, requestDto.DoctorId);
+        Assert.Equal(child.Id, requestDto.ChildId);
+        Assert.Equal("Pending", requestDto.Status);
+        Assert.Equal("Pediatrics", requestDto.Specialization);
+        Assert.Equal("Mindora Clinic", requestDto.ClinicName);
+
+        // Verify no active assignment was created before approval
+        var assignments = await _dbContext.DoctorChildAssignments
+            .Where(a => a.DoctorId == doctorProfileId && a.ChildId == child.Id)
+            .ToListAsync();
+        Assert.Empty(assignments);
+    }
+
+    [Fact]
+    public async Task LinkDoctor_By_ReferralCode_With_Invalid_Code_Throws_NotFoundException()
+    {
+        // Arrange
+        var (parentId, profileId) = await CreateParentAsync("parent_bad_code@test.com", "Parent BadCode");
+        SetCurrentUser(parentId, "parent_bad_code@test.com", "Parent BadCode", UserRole.Parent, profileId);
+
+        var createChildHandler = _serviceProvider.GetRequiredService<CreateChildHandler>();
+        var child = await createChildHandler.HandleAsync(new CreateChildRequest("Yara", new DateOnly(2021, 2, 2), null, DifficultyLevel.Beginner, DifficultyLevel.Beginner, DifficultyLevel.Beginner));
+
+        var linkHandler = _serviceProvider.GetRequiredService<LinkDoctorByCodeHandler>();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            linkHandler.HandleAsync(child.Id, new LinkDoctorByCodeRequest("DR-NONEXISTENT")));
     }
 }

@@ -26,11 +26,23 @@ public class DoctorProfileConfiguration : IEntityTypeConfiguration<DoctorProfile
         builder.Property(d => d.LicenseNumber)
             .HasMaxLength(100);
 
+        // P0 Doctor Referral Code from UI Audit
+        builder.Property(d => d.ReferralCode)
+            .IsRequired()
+            .HasMaxLength(50);
+
         builder.Property(d => d.CreatedAtUtc)
             .IsRequired();
 
+        builder.Property(d => d.Gender)
+            .HasConversion<int>();
+
         // 1-to-1 unique relationship with Identity ApplicationUser
         builder.HasIndex(d => d.UserId)
+            .IsUnique();
+
+        // Unique index on ReferralCode to enable fast lookups and prevent duplicates
+        builder.HasIndex(d => d.ReferralCode)
             .IsUnique();
 
         builder.HasOne<ApplicationUser>()

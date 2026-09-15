@@ -20,6 +20,10 @@ public class Session : BaseEntity
     public int? ActualDurationSeconds { get; private set; }
     public SessionAnalysisResult? AnalysisResult { get; private set; }
 
+    // P0 Parent Feedback Fields from UI Audit
+    public ParentSentimentRating? ParentRating { get; private set; }
+    public string? ParentNotes { get; private set; }
+
     public IReadOnlyCollection<PerformanceMetric> Metrics => _metrics.AsReadOnly();
 
     // Parameterless constructor for ORM deserialization
@@ -173,6 +177,25 @@ public class Session : BaseEntity
         }
 
         AnalysisResult = analysisResult;
+    }
+
+    /// <summary>
+    /// Records parent sentiment rating and qualitative observation notes for a completed session.
+    /// </summary>
+    public void RecordParentFeedback(ParentSentimentRating rating, string? notes = null)
+    {
+        if (Status != SessionStatus.Completed)
+        {
+            throw new DomainException("Parent feedback can only be recorded for a completed session.");
+        }
+
+        if (notes != null && notes.Length > 1000)
+        {
+            throw new DomainException("Parent notes cannot exceed 1000 characters.");
+        }
+
+        ParentRating = rating;
+        ParentNotes = notes?.Trim();
     }
 
     private void EnsureSessionIsActive()

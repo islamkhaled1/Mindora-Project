@@ -4,6 +4,7 @@ using Mindora.Application.Features.Sessions.AbandonSession;
 using Mindora.Application.Features.Sessions.CompleteSession;
 using Mindora.Application.Features.Sessions.GetSessionDetails;
 using Mindora.Application.Features.Sessions.Models;
+using Mindora.Application.Features.Sessions.RecordFeedback;
 using Mindora.Application.Features.Sessions.RecordMetrics;
 using Mindora.Application.Features.Sessions.StartSession;
 
@@ -57,6 +58,23 @@ public class SessionsController : ControllerBase
         [FromRoute] Guid sessionId,
         [FromBody] CompleteSessionRequest request,
         [FromServices] CompleteSessionHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var response = await handler.HandleAsync(sessionId, request, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPost("{sessionId:guid}/feedback")]
+    [ProducesResponseType(typeof(CompletedSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RecordFeedback(
+        [FromRoute] Guid sessionId,
+        [FromBody] RecordFeedbackRequest request,
+        [FromServices] RecordFeedbackHandler handler,
         CancellationToken cancellationToken)
     {
         var response = await handler.HandleAsync(sessionId, request, cancellationToken);

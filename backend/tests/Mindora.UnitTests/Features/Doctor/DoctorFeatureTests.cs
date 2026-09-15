@@ -12,6 +12,7 @@ using Mindora.Application.Features.Auth.RegisterParent;
 using Mindora.Application.Features.Children.CreateChild;
 using Mindora.Application.Features.Doctor.GetDoctorChildren;
 using Mindora.Application.Features.Doctor.GetDoctorDashboard;
+using Mindora.Application.Features.Doctor.Notes;
 using Mindora.Domain.Entities;
 using Mindora.Domain.Enums;
 using Mindora.Infrastructure.Identity;
@@ -304,8 +305,112 @@ public class DoctorFeatureTests : IDisposable
 
         var dashHandler = _serviceProvider.GetRequiredService<GetDoctorDashboardHandler>();
         var childrenHandler = _serviceProvider.GetRequiredService<GetDoctorChildrenHandler>();
+        var updateNotesHandler = _serviceProvider.GetRequiredService<UpdateDoctorNotesHandler>();
+        var getNotesHandler = _serviceProvider.GetRequiredService<GetDoctorNotesHandler>();
 
         await Assert.ThrowsAsync<ForbiddenException>(() => dashHandler.HandleAsync());
         await Assert.ThrowsAsync<ForbiddenException>(() => childrenHandler.HandleAsync());
+        await Assert.ThrowsAsync<ForbiddenException>(() => updateNotesHandler.HandleAsync(Guid.NewGuid(), new UpdateDoctorNotesRequest("Note")));
+        await Assert.ThrowsAsync<ForbiddenException>(() => getNotesHandler.HandleAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task Doctor_Can_Update_And_Retrieve_Notes_For_Assigned_Child()
+    {
+        // Arrange
+        var (parentUser, parentProfile) = await CreateParentAsync("parent_notes@test.com", "Parent Notes");
+        var child = await CreateChildAsync(parentUser, parentProfile, "Notes Child");
+
+        var (docUser, docProfile) = await CreateDoctorAsync("doc_notes@test.com", "Dr. Notes");
+
+        var assignment = DoctorChildAssignment.Create(docProfile, child.Id);
+        _dbContext.DoctorChildAssignments.Add(assignment);
+        await _dbContext.SaveChangesAsync();
+
+        SetCurrentUser(docUser, "doc_notes@test.com", "Dr. Notes", UserRole.Doctor, docProfile);
+
+        var getNotesHandler = _serviceProvider.GetRequiredService<GetDoctorNotesHandler>();
+        var updateNotesHandler = _serviceProvider.GetRequiredService<UpdateDoctorNotesHandler>();
+
+        // Act 1 - Initial get should return null notes
+        var initialNotes = await getNotesHandler.HandleAsync(child.Id);
+        Assert.Equal(child.Id, initialNotes.ChildId);
+        Assert.Null(initialNotes.Notes);
+        Assert.Null(initialNotes.UpdatedAtUtc);
+
+        // Act 2 - Update notes
+        var updateResult = await updateNotesHandler.HandleAsync(child.Id, new UpdateDoctorNotesRequest("Child demonstrates steady motor improvement."));
+        Assert.Equal(child.Id, updateResult.ChildId);
+        Assert.Equal("Child demonstrates steady motor improvement.", updateResult.Notes);
+        Assert.NotNull(updateResult.UpdatedAtUtc);
+
+        // Act 3 - Retrieve updated notes
+        var retrievedNotes = await getNotesHandler.HandleAsync(child.Id);
+        Assert.Equal("Child demonstrates steady motor improvement.", retrievedNotes.Notes);
+        Assert.Equal(updateResult.UpdatedAtUtc, retrievedNotes.UpdatedAtUtc);
+    }
+
+    [Fact]
+    public async Task Doctor_Cannot_Update_Or_Get_Notes_For_Unassigned_Child()
+    {
+        // Arrange
+        var (parentUser, parentProfile) = await CreateParentAsync("parent_unassigned@test.com", "Parent Unassigned");
+        var child = await CreateChildAsync(parentUser, parentProfile, "Unassigned Child");
+
+        var (docUser, docProfile) = await CreateDoctorAsync("doc_other@test.com", "Dr. Other");
+        SetCurrentUser(docUser, "doc_other@test.com", "Dr. Other", UserRole.Doctor, docProfile);
+
+        var getNotesHandler = _serviceProvider.GetRequiredService<GetDoctorNotesHandler>();
+        var updateNotesHandler = _serviceProvider.GetRequiredService<UpdateDoctorNotesHandler>();
+
+        // Act & Assert (IDOR protection: returns NotFoundException)
+        await Assert.ThrowsAsync<NotFoundException>(() => getNotesHandler.HandleAsync(child.Id));
+        await Assert.ThrowsAsync<NotFoundException>(() => updateNotesHandler.HandleAsync(child.Id, new UpdateDoctorNotesRequest("Test")));
+    }
+
+    [Fact]
+    public async Task DoctorDashboard_Returns_WeeklyProgressTrend_And_TodayCompletedSessions()
+    {
+        // Arrange
+        var (parentUser, parentProfile) = await CreateParentAsync("parent_trend@test.com", "Parent Trend");
+        var child = await CreateChildAsync(parentUser, parentProfile, "Trend Child");
+
+        var (docUser, docProfile) = await CreateDoctorAsync("doc_trend@test.com", "Dr. Trend");
+        var assignment = DoctorChildAssignment.Create(docProfile, child.Id);
+        _dbContext.DoctorChildAssignments.Add(assignment);
+        await _dbContext.SaveChangesAsync();
+
+        var activity = CreateActivity("Jumping Dots");
+
+        // Session completed today
+        var todaySession = Session.Start(child.Id, activity.Id, ActivityDomain.Movement, DateTime.UtcNow.AddHours(-1));
+        todaySession.Complete(DateTime.UtcNow.AddMinutes(-30), 1800);
+        var todayAnalysis = SessionAnalysisResult.Create(todaySession.Id, 85.0m, 85.0m, "Great agility", false, DifficultyAdjustment.Increase);
+        todaySession.AttachAnalysisResult(todayAnalysis);
+
+        _dbContext.Sessions.Add(todaySession);
+        _dbContext.SessionAnalysisResults.Add(todayAnalysis);
+        await _dbContext.SaveChangesAsync();
+
+        SetCurrentUser(docUser, "doc_trend@test.com", "Dr. Trend", UserRole.Doctor, docProfile);
+        var dashHandler = _serviceProvider.GetRequiredService<GetDoctorDashboardHandler>();
+
+        // Act
+        var dash = await dashHandler.HandleAsync();
+
+        // Assert
+        Assert.NotNull(dash.WeeklyProgressTrend);
+        Assert.Equal(6, dash.WeeklyProgressTrend.Count);
+        Assert.Equal(1, dash.WeeklyProgressTrend[0].WeekNumber);
+        Assert.Equal("أسبوع 1", dash.WeeklyProgressTrend[0].WeekLabel);
+        Assert.Equal(6, dash.WeeklyProgressTrend[5].WeekNumber);
+        Assert.Equal("أسبوع 6", dash.WeeklyProgressTrend[5].WeekLabel);
+        Assert.Equal(85.0m, dash.WeeklyProgressTrend[5].AverageScore); // today's session is in week 6
+
+        Assert.NotNull(dash.TodayCompletedSessions);
+        Assert.Single(dash.TodayCompletedSessions);
+        Assert.Equal(todaySession.Id, dash.TodayCompletedSessions[0].SessionId);
+        Assert.Equal("Trend Child", dash.TodayCompletedSessions[0].ChildFullName);
+        Assert.Equal(85.0m, dash.TodayCompletedSessions[0].OverallScore);
     }
 }

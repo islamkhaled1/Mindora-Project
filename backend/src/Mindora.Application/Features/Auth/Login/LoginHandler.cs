@@ -40,6 +40,12 @@ public class LoginHandler
             throw new UnauthorizedException("Invalid email or password.");
         }
 
+        var isEmailConfirmed = await _identityService.IsEmailConfirmedAsync(request.Email, cancellationToken);
+        if (!isEmailConfirmed)
+        {
+            throw new EmailNotConfirmedException(request.Email.Trim().ToLowerInvariant());
+        }
+
         Guid profileId = Guid.Empty;
 
         if (role == UserRole.Parent)

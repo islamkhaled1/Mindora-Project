@@ -8,6 +8,8 @@ public record AuthUserDto(
     Guid ProfileId);
 
 public record AuthResponseDto(
-    string Token,
-    DateTime ExpiresAtUtc,
-    AuthUserDto User);
+    string? Token,
+    DateTime? ExpiresAtUtc,
+    AuthUserDto? User,
+    bool RequiresEmailVerification = false,
+    string? Message = null);

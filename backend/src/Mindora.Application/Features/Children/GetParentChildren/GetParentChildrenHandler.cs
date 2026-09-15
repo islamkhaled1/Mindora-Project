@@ -48,7 +48,9 @@ public class GetParentChildrenHandler
                 c.CurrentMovementLevel.ToString(),
                 c.CurrentSpeechLevel.ToString(),
                 c.CurrentAttentionLevel.ToString(),
-                c.CreatedAtUtc))
+                c.CreatedAtUtc,
+                c.AvatarUrl,
+                c.Gender.HasValue ? c.Gender.Value.ToString() : null))
             .ToList();
 
         return children;

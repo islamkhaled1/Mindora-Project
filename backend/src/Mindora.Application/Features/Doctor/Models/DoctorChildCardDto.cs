@@ -12,4 +12,7 @@ public record DoctorChildCardDto(
     decimal OverallAverageScore,
     string RecentTrend,
     DateTime? LastSessionDateUtc,
-    DateTime AssignedAtUtc);
+    DateTime AssignedAtUtc,
+    string? Gender = null,
+    string? AvatarUrl = null,
+    string? SupportLevel = null);

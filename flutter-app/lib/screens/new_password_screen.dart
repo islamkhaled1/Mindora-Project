@@ -4,6 +4,8 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ci.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:sawa/constants.dart';
+import 'package:sawa/core/errors/api_exception.dart';
+import 'package:sawa/core/services/auth_service.dart';
 import 'package:sawa/screens/reset_screen.dart';
 import 'package:sawa/widgets/back_icon.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
@@ -15,7 +17,12 @@ import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/simi_bold_title.dart';
 
 class NewPasswordScreen extends StatefulWidget {
-  const NewPasswordScreen({super.key});
+  final String resetToken;
+
+  const NewPasswordScreen({
+    super.key,
+    this.resetToken = '',
+  });
 
   @override
   State<NewPasswordScreen> createState() => _NewPasswordScreenState();
@@ -59,11 +66,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   }
 
   bool get _allRequirementsMet =>
-      _hasLowercase && _hasUppercase && _hasDigit && _hasSpecialChar;
+      _hasLowercase && _hasUppercase && _hasDigit && _hasSpecialChar && _passwordController.text.length >= 8;
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'من فضلك أدخل كلمة المرور';
+    }
+    if (value.length < 8) {
+      return 'كلمة المرور يجب ألا تقل عن 8 أحرف';
     }
     if (!_allRequirementsMet) {
       return 'كلمة المرور لا تحقق جميع المتطلبات';
@@ -82,24 +92,54 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   }
 
   Future<void> _handleResetPassword() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
+
+    if (widget.resetToken.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('رمز إعادة التعيين غير متوفر. يرجى إعادة المحاولة من البداية.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      // TODO: API Call
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ResetScreen()),
+      await AuthService().resetPassword(
+        resetToken: widget.resetToken,
+        newPassword: _passwordController.text,
+        confirmPassword: _confirmPasswordController.text,
       );
-    } catch (e) {
+
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      Navigator.pushAndRemoveUntil(
         context,
-      ).showSnackBar(const SnackBar(content: Text('حدث خطأ، حاول مرة أخرى')));
+        MaterialPageRoute(builder: (context) => const ResetScreen()),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ أثناء إعادة تعيين كلمة المرور، يرجى المحاولة لاحقاً.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -134,7 +174,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   : null,
             ),
             SizedBox(width: 8.w),
-            Description(text: label, fontSize: 12),
+            Flexible(child: Description(text: label, fontSize: 12)),
           ],
         ),
       ),

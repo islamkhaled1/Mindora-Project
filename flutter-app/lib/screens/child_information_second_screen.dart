@@ -230,9 +230,15 @@ import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/simi_bold_title.dart';
 import 'package:iconify_flutter/icons/entypo.dart';
 import 'package:iconify_flutter/icons/material_symbols.dart';
+import '../core/errors/api_exception.dart';
+import '../core/models/child_enums.dart';
+import '../core/services/children_service.dart';
+import '../core/state/child_intake_state.dart';
 
 class ChildInformationSecondScreen extends StatefulWidget {
-  ChildInformationSecondScreen({super.key});
+  final ChildIntakeState? intakeState;
+
+  ChildInformationSecondScreen({super.key, this.intakeState});
 
   @override
   State<ChildInformationSecondScreen> createState() =>
@@ -246,6 +252,9 @@ class _ChildInformationSecondScreenState
   final _supportLevelController = TextEditingController();
   final _timeRangeController = TextEditingController();
   final _focusDurationController = TextEditingController();
+
+  late final ChildIntakeState _intakeState =
+      widget.intakeState ?? ChildIntakeState();
 
   TimeOfDay? startTime;
   TimeOfDay? endTime;
@@ -266,6 +275,10 @@ class _ChildInformationSecondScreenState
     if (value == null || value.trim().isEmpty) {
       return 'من فضلك أدخل درجة الدعم';
     }
+    final tier = SupportLevelTier.fromUserInput(value);
+    if (tier == null) {
+      return 'يرجى إدخال درجة دعم صالحة (بسيط، متوسط، عالي)';
+    }
     return null;
   }
 
@@ -280,25 +293,82 @@ class _ChildInformationSecondScreenState
     if (value == null || value.trim().isEmpty) {
       return 'من فضلك حدد المدة';
     }
+    final match = RegExp(r'\d+').firstMatch(value);
+    if (match == null) {
+      return 'يرجى إدخال مدة تركيز صالحة بالدقائق (مثال: 15)';
+    }
+    final minutes = int.tryParse(match.group(0)!);
+    if (minutes == null || minutes < 1 || minutes > 240) {
+      return 'مدة التركيز يجب أن تكون بين 1 و 240 دقيقة';
+    }
     return null;
   }
 
   Future<void> _handleContinue() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final supportTier =
+        SupportLevelTier.fromUserInput(_supportLevelController.text);
+    if (supportTier == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى إدخال درجة دعم صالحة (بسيط، متوسط، عالي)'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    int? parsedFocusDuration;
+    final focusMatch =
+        RegExp(r'\d+').firstMatch(_focusDurationController.text);
+    if (focusMatch != null) {
+      parsedFocusDuration = int.tryParse(focusMatch.group(0)!);
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // TODO: API Call
+      // Populate Step 2 data into intakeState
+      _intakeState.rawSupportLevelText = _supportLevelController.text.trim();
+      _intakeState.supportLevelTier = supportTier;
+      _intakeState.preferredPracticeTime =
+          _timeRangeController.text.trim().isNotEmpty
+              ? _timeRangeController.text.trim()
+              : null;
+      _intakeState.focusDurationMinutes = parsedFocusDuration;
+      _intakeState.hearingStatus = hearingStatus;
+      _intakeState.visionStatus = visionStatus;
+      _intakeState.preferredActivities = preferredActivities;
+
+      final request = _intakeState.toCreateChildRequest();
+
+      final childrenService = ChildrenService();
+      await childrenService.createChild(request);
+
       if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => DoctorOrAiScreen()),
       );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(e
+              .toString()
+              .replaceFirst('Exception: ', '')
+              .replaceFirst('StateError: ', '')),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

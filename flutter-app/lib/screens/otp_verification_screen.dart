@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/app_text_styles.dart';
 import 'package:sawa/constants.dart';
+import 'package:sawa/core/errors/api_exception.dart';
+import 'package:sawa/core/services/auth_service.dart';
 import 'package:sawa/screens/new_password_screen.dart';
-import 'package:sawa/widgets/auth_action_row.dart';
 import 'package:sawa/widgets/back_icon.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
 import 'package:sawa/widgets/custom_elevated_button.dart';
@@ -15,7 +17,12 @@ import 'package:sawa/widgets/simi_bold_title.dart';
 import 'package:pinput/pinput.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
-  const OtpVerificationScreen({super.key});
+  final String email;
+
+  const OtpVerificationScreen({
+    super.key,
+    this.email = 'example@gmail.com',
+  });
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -26,37 +33,108 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool _isLoading = false;
   String? _errorText;
 
+  int _resendCountdown = 60;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _timer?.cancel();
+    setState(() => _resendCountdown = 60);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCountdown > 0) {
+        setState(() => _resendCountdown--);
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _timer?.cancel();
     _otpController.dispose();
     super.dispose();
   }
 
   Future<void> _handleVerify() async {
-    if (_otpController.text.trim().length < 6) {
-      setState(() => _errorText = 'من فضلك أدخل الرمز كاملاً');
+    if (_isLoading) return;
+
+    final otp = _otpController.text.trim();
+    if (otp.length < 6) {
+      setState(() => _errorText = 'من فضلك أدخل الرمز كاملاً (6 أرقام)');
       return;
     }
 
     setState(() {
-      _errorText = null;
       _isLoading = true;
+      _errorText = null;
     });
 
     try {
-      // TODO: API Call
+      final resetToken = await AuthService().verifyOtp(widget.email, otp);
+
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => NewPasswordScreen()),
+        MaterialPageRoute(
+          builder: (context) => NewPasswordScreen(resetToken: resetToken),
+        ),
       );
-    } catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('حدث خطأ، حاول مرة أخرى')));
+      setState(() {
+        _errorText = e.firstErrorMessage;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorText = 'حدث خطأ أثناء التحقق من الرمز، يرجى المحاولة مجدداً.';
+      });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleResendOtp() async {
+    if (_resendCountdown > 0) return;
+
+    try {
+      await AuthService().forgotPassword(widget.email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني.'),
+          backgroundColor: AppColors.primaryColor,
+        ),
+      );
+      _startCountdown();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذر إعادة إرسال الرمز، يرجى المحاولة بعد قليل.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -79,7 +157,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
             ),
             Center(
-              child: MediumTitle(title: 'example@gmail.com', fontSize: 12),
+              child: MediumTitle(title: widget.email, fontSize: 12),
             ),
             Center(
               child: Description(
@@ -154,9 +232,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               onPressed: _handleVerify,
             ),
             SizedBox(height: 16.h),
-            AuthActionRow(
-              question: ' لم يصلك الرمز ؟',
-              linkText: 'إعادة إرسال الرمز',
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              textDirection: TextDirection.rtl,
+              children: [
+                Text(
+                  'لم يصلك الرمز؟ ',
+                  style: AppTextStyles.font400Regular.copyWith(
+                    fontSize: 12.sp,
+                    color: AppColors.secondaryColor,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _resendCountdown > 0 ? null : _handleResendOtp,
+                  child: Text(
+                    _resendCountdown > 0
+                        ? 'إعادة الإرسال بعد ($_resendCountdown ثانية)'
+                        : 'إعادة إرسال الرمز',
+                    style: AppTextStyles.font600SimiBold.copyWith(
+                      fontSize: 12.sp,
+                      color: _resendCountdown > 0
+                          ? AppColors.secondaryColor
+                          : AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

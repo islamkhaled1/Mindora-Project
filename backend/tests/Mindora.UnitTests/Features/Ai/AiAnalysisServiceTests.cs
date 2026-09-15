@@ -111,7 +111,99 @@ public class AiAnalysisServiceTests
         // Assert
         Assert.True(result.FatigueObserved);
         Assert.Equal(DifficultyAdjustment.Decrease, result.RecommendedDifficultyAdjustment);
+        Assert.Equal(55.00m, result.OverallPerformanceScore); // 65.00 - 10.00
+        Assert.Equal(65.00m, result.DomainScore); // Unreduced domain score
         Assert.Contains("fatigue", result.SupportiveObservations.ToLowerInvariant());
+    }
+
+    [Fact]
+    public async Task MockHeuristic_ReactionTime_LessOrEqual_3000_Does_Not_Trigger_Fatigue()
+    {
+        // Arrange
+        var mockService = new MockAiAnalysisService();
+        var request = new AiSessionAnalysisRequest(
+            Guid.NewGuid(), 6, ActivityDomain.Movement, DifficultyLevel.Intermediate, 120,
+            new List<AiMetricInput>
+            {
+                new("AccuracyPercentage", 70.00m, DateTime.UtcNow),
+                new("ReactionTimeMs", 2950.00m, DateTime.UtcNow) // <= 3000ms
+            });
+
+        // Act
+        var result = await mockService.AnalyzeSessionPerformanceAsync(request);
+
+        // Assert
+        Assert.False(result.FatigueObserved);
+        Assert.Equal(70.00m, result.OverallPerformanceScore); // No -10 deduction
+        Assert.Equal(DifficultyAdjustment.Maintain, result.RecommendedDifficultyAdjustment); // 70% is Maintain
+    }
+
+    [Fact]
+    public async Task MockHeuristic_ReactionTime_Above_3000_With_HighScore_Suppresses_Fatigue()
+    {
+        // Arrange: Accuracy is 90% (>= 80%), so even if reaction time is 4500ms, fatigue is NOT triggered
+        var mockService = new MockAiAnalysisService();
+        var request = new AiSessionAnalysisRequest(
+            Guid.NewGuid(), 6, ActivityDomain.Movement, DifficultyLevel.Intermediate, 120,
+            new List<AiMetricInput>
+            {
+                new("AccuracyPercentage", 90.00m, DateTime.UtcNow),
+                new("ReactionTimeMs", 4500.00m, DateTime.UtcNow)
+            });
+
+        // Act
+        var result = await mockService.AnalyzeSessionPerformanceAsync(request);
+
+        // Assert
+        Assert.False(result.FatigueObserved);
+        Assert.Equal(90.00m, result.OverallPerformanceScore);
+        Assert.Equal(DifficultyAdjustment.Increase, result.RecommendedDifficultyAdjustment);
+    }
+
+    [Fact]
+    public async Task MockHeuristic_ReactionTime_Above_3000_With_LowScore_Triggers_Fatigue_And_Decrease()
+    {
+        // Arrange: Accuracy is 70% (< 80%), reaction time is 3800ms (> 3000ms)
+        var mockService = new MockAiAnalysisService();
+        var request = new AiSessionAnalysisRequest(
+            Guid.NewGuid(), 6, ActivityDomain.Movement, DifficultyLevel.Intermediate, 120,
+            new List<AiMetricInput>
+            {
+                new("AccuracyPercentage", 70.00m, DateTime.UtcNow),
+                new("ReactionTimeMs", 3800.00m, DateTime.UtcNow)
+            });
+
+        // Act
+        var result = await mockService.AnalyzeSessionPerformanceAsync(request);
+
+        // Assert
+        Assert.True(result.FatigueObserved);
+        Assert.Equal(60.00m, result.OverallPerformanceScore); // 70.00 - 10.00 = 60.00
+        Assert.Equal(70.00m, result.DomainScore);
+        Assert.Equal(DifficultyAdjustment.Decrease, result.RecommendedDifficultyAdjustment);
+        Assert.Contains("fatigue", result.SupportiveObservations.ToLowerInvariant());
+    }
+
+    [Fact]
+    public async Task MockHeuristic_Medium_Performance_Maintains_Difficulty()
+    {
+        // Arrange: Accuracy 72%, reaction time 1200ms (no fatigue)
+        var mockService = new MockAiAnalysisService();
+        var request = new AiSessionAnalysisRequest(
+            Guid.NewGuid(), 6, ActivityDomain.Movement, DifficultyLevel.Intermediate, 120,
+            new List<AiMetricInput>
+            {
+                new("AccuracyPercentage", 72.00m, DateTime.UtcNow),
+                new("ReactionTimeMs", 1200.00m, DateTime.UtcNow)
+            });
+
+        // Act
+        var result = await mockService.AnalyzeSessionPerformanceAsync(request);
+
+        // Assert
+        Assert.False(result.FatigueObserved);
+        Assert.Equal(72.00m, result.OverallPerformanceScore);
+        Assert.Equal(DifficultyAdjustment.Maintain, result.RecommendedDifficultyAdjustment);
     }
 
     [Fact]

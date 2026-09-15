@@ -32,6 +32,7 @@ public class PersistenceTests
         Assert.NotNull(model.FindEntityType(typeof(DoctorChildAssignment)));
         Assert.NotNull(model.FindEntityType(typeof(PerformanceMetric)));
         Assert.NotNull(model.FindEntityType(typeof(SessionAnalysisResult)));
+        Assert.NotNull(model.FindEntityType(typeof(BaselineAssessment)));
     }
 
     [Fact]
@@ -174,5 +175,121 @@ public class PersistenceTests
         Assert.Equal(2450.50m, queried.First(m => m.MetricType == "ReactionTimeMs").Value);
         Assert.Equal(120.00m, queried.First(m => m.MetricType == "AttentionDurationSeconds").Value);
         Assert.Equal(15.00m, queried.First(m => m.MetricType == "RepetitionCount").Value);
+    }
+
+    [Fact]
+    public async Task Child_Extended_Profile_Fields_Persist_And_Retrieve_Accurately()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var parentId = Guid.NewGuid();
+
+        var child = Child.Create(
+            parentId,
+            "Maya Johnson",
+            DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-7)),
+            supportNotes: "Thrives with visual structure.",
+            currentMovementLevel: DifficultyLevel.Intermediate,
+            currentSpeechLevel: DifficultyLevel.Beginner,
+            currentAttentionLevel: DifficultyLevel.Advanced,
+            createdAtUtc: DateTime.UtcNow,
+            gender: Gender.Girl,
+            diagnosis: "Autism Spectrum Disorder",
+            avatarUrl: "https://mindora.app/avatars/maya.png",
+            supportLevel: SupportLevel.Moderate,
+            hearingStatus: SensoryStatus.Normal,
+            visionStatus: SensoryStatus.HasDifficulty,
+            focusDurationMinutes: 15,
+            preferredPracticeTime: "10:00 - 11:30 AM",
+            preferredActivityType: ActivityTypePreference.Games);
+
+        context.Children.Add(child);
+        await context.SaveChangesAsync();
+
+        // Act
+        var retrieved = await context.Children.FirstAsync(c => c.Id == child.Id);
+
+        // Assert
+        Assert.Equal(Gender.Girl, retrieved.Gender);
+        Assert.Equal("Autism Spectrum Disorder", retrieved.Diagnosis);
+        Assert.Equal("https://mindora.app/avatars/maya.png", retrieved.AvatarUrl);
+        Assert.Equal(SupportLevel.Moderate, retrieved.SupportLevel);
+        Assert.Equal(SensoryStatus.Normal, retrieved.HearingStatus);
+        Assert.Equal(SensoryStatus.HasDifficulty, retrieved.VisionStatus);
+        Assert.Equal(15, retrieved.FocusDurationMinutes);
+        Assert.Equal("10:00 - 11:30 AM", retrieved.PreferredPracticeTime);
+        Assert.Equal(ActivityTypePreference.Games, retrieved.PreferredActivityType);
+    }
+
+    [Fact]
+    public async Task Session_Parent_Feedback_Persists_And_Retrieves_Accurately()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var childId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+
+        var session = Session.Start(childId, activityId, ActivityDomain.Movement);
+        session.Complete(DateTime.UtcNow, actualDurationSeconds: 300);
+        session.RecordParentFeedback(ParentSentimentRating.Easy, "Child was very engaged and smiled throughout.");
+
+        context.Sessions.Add(session);
+        await context.SaveChangesAsync();
+
+        // Act
+        var retrieved = await context.Sessions.FirstAsync(s => s.Id == session.Id);
+
+        // Assert
+        Assert.Equal(ParentSentimentRating.Easy, retrieved.ParentRating);
+        Assert.Equal("Child was very engaged and smiled throughout.", retrieved.ParentNotes);
+    }
+
+    [Fact]
+    public async Task DoctorProfile_ReferralCode_Persists_And_Enforces_Lookup()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var userId = Guid.NewGuid();
+
+        var doctor = DoctorProfile.Create(userId, "Pediatric Neurologist", "Apex Children's Clinic", "LIC-4412", referralCode: "DR-TESTCODE");
+        context.DoctorProfiles.Add(doctor);
+        await context.SaveChangesAsync();
+
+        // Act
+        var retrieved = await context.DoctorProfiles.FirstAsync(d => d.ReferralCode == "DR-TESTCODE");
+
+        // Assert
+        Assert.Equal(userId, retrieved.UserId);
+        Assert.Equal("DR-TESTCODE", retrieved.ReferralCode);
+    }
+
+    [Fact]
+    public async Task BaselineAssessment_Persists_Scores_With_Precision()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var childId = Guid.NewGuid();
+
+        var assessment = BaselineAssessment.Create(
+            childId,
+            overallScore: 82.50m,
+            cognitiveScore: 78.00m,
+            communicationScore: 85.25m,
+            motorScore: 90.00m,
+            emotionalScore: 76.75m);
+
+        context.BaselineAssessments.Add(assessment);
+        await context.SaveChangesAsync();
+
+        // Act
+        var retrieved = await context.BaselineAssessments.FirstAsync(b => b.Id == assessment.Id);
+
+        // Assert
+        Assert.Equal(childId, retrieved.ChildId);
+        Assert.Equal(82.50m, retrieved.OverallScore);
+        Assert.Equal(78.00m, retrieved.CognitiveScore);
+        Assert.Equal(85.25m, retrieved.CommunicationScore);
+        Assert.Equal(90.00m, retrieved.MotorScore);
+        Assert.Equal(76.75m, retrieved.EmotionalScore);
     }
 }

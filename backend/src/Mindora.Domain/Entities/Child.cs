@@ -19,6 +19,17 @@ public class Child : BaseEntity
     public bool IsDeleted { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    // P0 Extended Profile Fields from UI Audit
+    public Gender? Gender { get; private set; }
+    public string? Diagnosis { get; private set; }
+    public string? AvatarUrl { get; private set; }
+    public SupportLevel? SupportLevel { get; private set; }
+    public SensoryStatus? HearingStatus { get; private set; }
+    public SensoryStatus? VisionStatus { get; private set; }
+    public int? FocusDurationMinutes { get; private set; }
+    public string? PreferredPracticeTime { get; private set; }
+    public ActivityTypePreference? PreferredActivityType { get; private set; }
+
     // Parameterless constructor for ORM deserialization
     protected Child() : base()
     {
@@ -34,7 +45,16 @@ public class Child : BaseEntity
         DifficultyLevel currentSpeechLevel = DifficultyLevel.Beginner,
         DifficultyLevel currentAttentionLevel = DifficultyLevel.Beginner,
         bool isDeleted = false,
-        DateTime? createdAtUtc = null) : base(id)
+        DateTime? createdAtUtc = null,
+        Gender? gender = null,
+        string? diagnosis = null,
+        string? avatarUrl = null,
+        SupportLevel? supportLevel = null,
+        SensoryStatus? hearingStatus = null,
+        SensoryStatus? visionStatus = null,
+        int? focusDurationMinutes = null,
+        string? preferredPracticeTime = null,
+        ActivityTypePreference? preferredActivityType = null) : base(id)
     {
         if (parentId == Guid.Empty)
         {
@@ -43,6 +63,7 @@ public class Child : BaseEntity
 
         ValidateFullName(fullName);
         ValidateDateOfBirth(dateOfBirth);
+        ValidateOptionalProfileFields(diagnosis, avatarUrl, focusDurationMinutes, preferredPracticeTime);
 
         ParentId = parentId;
         FullName = fullName.Trim();
@@ -53,6 +74,16 @@ public class Child : BaseEntity
         CurrentAttentionLevel = currentAttentionLevel;
         IsDeleted = isDeleted;
         CreatedAtUtc = createdAtUtc ?? DateTime.UtcNow;
+
+        Gender = gender;
+        Diagnosis = diagnosis?.Trim();
+        AvatarUrl = avatarUrl?.Trim();
+        SupportLevel = supportLevel;
+        HearingStatus = hearingStatus;
+        VisionStatus = visionStatus;
+        FocusDurationMinutes = focusDurationMinutes;
+        PreferredPracticeTime = preferredPracticeTime?.Trim();
+        PreferredActivityType = preferredActivityType;
     }
 
     public static Child Create(
@@ -63,7 +94,16 @@ public class Child : BaseEntity
         DifficultyLevel currentMovementLevel = DifficultyLevel.Beginner,
         DifficultyLevel currentSpeechLevel = DifficultyLevel.Beginner,
         DifficultyLevel currentAttentionLevel = DifficultyLevel.Beginner,
-        DateTime? createdAtUtc = null)
+        DateTime? createdAtUtc = null,
+        Gender? gender = null,
+        string? diagnosis = null,
+        string? avatarUrl = null,
+        SupportLevel? supportLevel = null,
+        SensoryStatus? hearingStatus = null,
+        SensoryStatus? visionStatus = null,
+        int? focusDurationMinutes = null,
+        string? preferredPracticeTime = null,
+        ActivityTypePreference? preferredActivityType = null)
     {
         return new Child(
             Guid.NewGuid(),
@@ -75,17 +115,48 @@ public class Child : BaseEntity
             currentSpeechLevel,
             currentAttentionLevel,
             false,
-            createdAtUtc);
+            createdAtUtc,
+            gender,
+            diagnosis,
+            avatarUrl,
+            supportLevel,
+            hearingStatus,
+            visionStatus,
+            focusDurationMinutes,
+            preferredPracticeTime,
+            preferredActivityType);
     }
 
-    public void UpdateProfile(string fullName, DateOnly dateOfBirth, string? supportNotes)
+    public void UpdateProfile(
+        string fullName,
+        DateOnly dateOfBirth,
+        string? supportNotes,
+        Gender? gender = null,
+        string? diagnosis = null,
+        string? avatarUrl = null,
+        SupportLevel? supportLevel = null,
+        SensoryStatus? hearingStatus = null,
+        SensoryStatus? visionStatus = null,
+        int? focusDurationMinutes = null,
+        string? preferredPracticeTime = null,
+        ActivityTypePreference? preferredActivityType = null)
     {
         ValidateFullName(fullName);
         ValidateDateOfBirth(dateOfBirth);
+        ValidateOptionalProfileFields(diagnosis, avatarUrl, focusDurationMinutes, preferredPracticeTime);
 
         FullName = fullName.Trim();
         DateOfBirth = dateOfBirth;
         SupportNotes = supportNotes?.Trim();
+        Gender = gender;
+        Diagnosis = diagnosis?.Trim();
+        AvatarUrl = avatarUrl?.Trim();
+        SupportLevel = supportLevel;
+        HearingStatus = hearingStatus;
+        VisionStatus = visionStatus;
+        FocusDurationMinutes = focusDurationMinutes;
+        PreferredPracticeTime = preferredPracticeTime?.Trim();
+        PreferredActivityType = preferredActivityType;
     }
 
     public void UpdateLevels(DifficultyLevel movement, DifficultyLevel speech, DifficultyLevel attention)
@@ -119,6 +190,33 @@ public class Child : BaseEntity
         if (dateOfBirth >= today)
         {
             throw new DomainException("Child date of birth must be a valid past date.");
+        }
+    }
+
+    private static void ValidateOptionalProfileFields(
+        string? diagnosis,
+        string? avatarUrl,
+        int? focusDurationMinutes,
+        string? preferredPracticeTime)
+    {
+        if (diagnosis != null && diagnosis.Length > 200)
+        {
+            throw new DomainException("Child diagnosis cannot exceed 200 characters.");
+        }
+
+        if (avatarUrl != null && avatarUrl.Length > 500)
+        {
+            throw new DomainException("Child avatar URL cannot exceed 500 characters.");
+        }
+
+        if (preferredPracticeTime != null && preferredPracticeTime.Length > 100)
+        {
+            throw new DomainException("Child preferred practice time cannot exceed 100 characters.");
+        }
+
+        if (focusDurationMinutes.HasValue && (focusDurationMinutes.Value <= 0 || focusDurationMinutes.Value > 240))
+        {
+            throw new DomainException("Focus duration must be between 1 and 240 minutes.");
         }
     }
 }

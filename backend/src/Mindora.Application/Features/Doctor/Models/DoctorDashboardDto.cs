@@ -11,4 +11,7 @@ public record DoctorDashboardDto(
     decimal AverageMovementScore,
     int NeedsSupportCount,
     IReadOnlyList<DoctorNeedsSupportAlertDto> NeedsSupportAlerts,
-    IReadOnlyList<DoctorRecentSessionDto> RecentCompletedSessions);
+    IReadOnlyList<DoctorRecentSessionDto> RecentCompletedSessions,
+    string? ReferralCode = null,
+    IReadOnlyList<DoctorWeeklyTrendDto>? WeeklyProgressTrend = null,
+    IReadOnlyList<DoctorRecentSessionDto>? TodayCompletedSessions = null);

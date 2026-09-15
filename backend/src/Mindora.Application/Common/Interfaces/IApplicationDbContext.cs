@@ -17,6 +17,10 @@ public interface IApplicationDbContext
     IQueryable<PerformanceMetric> PerformanceMetrics { get; }
     IQueryable<SessionAnalysisResult> SessionAnalysisResults { get; }
     IQueryable<ChildLinkingCode> ChildLinkingCodes { get; }
+    IQueryable<BaselineAssessment> BaselineAssessments { get; }
+    IQueryable<DoctorLinkRequest> DoctorLinkRequests { get; }
+    IQueryable<PasswordResetToken> PasswordResetTokens { get; }
+    IQueryable<EmailVerificationToken> EmailVerificationTokens { get; }
 
     void Add<TEntity>(TEntity entity) where TEntity : class;
     void Remove<TEntity>(TEntity entity) where TEntity : class;

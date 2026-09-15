@@ -41,11 +41,19 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal(HttpStatusCode.Created, regResponse.StatusCode);
         var regResult = await regResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
         Assert.NotNull(regResult);
-        Assert.Equal("e2e_parent@mindora.com", regResult.User.Email);
+        Assert.True(regResult.RequiresEmailVerification);
+        Assert.Equal("e2e_parent@mindora.com", regResult.User!.Email);
         Assert.Equal("Parent", regResult.User.Role);
 
-        // 2. Login
+        // 2. Attempt login before email confirmation -> MUST BE REJECTED with 403 Forbidden
         var loginRequest = new LoginRequest("e2e_parent@mindora.com", "SecurePass123!");
+        var unverifiedLogin = await client.PostAsJsonAsync("/api/auth/login", loginRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, unverifiedLogin.StatusCode);
+
+        // Confirm email
+        await _factory.ConfirmUserEmailAsync("e2e_parent@mindora.com");
+
+        // 3. Login succeeds after email confirmation
         var loginResponse = await client.PostAsJsonAsync("/api/auth/login", loginRequest);
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
         var loginResult = await loginResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
@@ -55,7 +63,7 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         // Set Bearer Token for subsequent authenticated requests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.Token);
 
-        // 3. Get Current User (/api/auth/me)
+        // 4. Get Current User (/api/auth/me)
         var meResponse = await client.GetAsync("/api/auth/me");
         Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
         var meResult = await meResponse.Content.ReadFromJsonAsync<CurrentUserDto>();
@@ -63,7 +71,7 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal("e2e_parent@mindora.com", meResult.Email);
         Assert.Equal("Parent", meResult.Role);
 
-        // 4. Create Child
+        // 5. Create Child
         var createChildRequest = new CreateChildRequest(
             "E2E Child",
             new DateOnly(2018, 6, 15),
@@ -79,7 +87,7 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal("E2E Child", createdChild.FullName);
         Assert.NotEqual(Guid.Empty, createdChild.Id);
 
-        // 5. Get Child Details (/api/children/{childId})
+        // 6. Get Child Details (/api/children/{childId})
         var getChildResponse = await client.GetAsync($"/api/children/{createdChild.Id}");
         Assert.Equal(HttpStatusCode.OK, getChildResponse.StatusCode);
         var childDetails = await getChildResponse.Content.ReadFromJsonAsync<ChildDetailsDto>();
@@ -87,14 +95,14 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal(createdChild.Id, childDetails.Id);
         Assert.Equal("E2E Child", childDetails.FullName);
 
-        // 6. List Parent's Children (/api/children)
+        // 7. List Parent's Children (/api/children)
         var listResponse = await client.GetAsync("/api/children");
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var childrenList = await listResponse.Content.ReadFromJsonAsync<List<ChildSummaryDto>>();
         Assert.NotNull(childrenList);
         Assert.Contains(childrenList, c => c.Id == createdChild.Id);
 
-        // 7. Get Activities (/api/activities)
+        // 8. Get Activities (/api/activities)
         var activitiesResponse = await client.GetAsync("/api/activities?domain=Movement");
         Assert.Equal(HttpStatusCode.OK, activitiesResponse.StatusCode);
         var activities = await activitiesResponse.Content.ReadFromJsonAsync<List<ActivityDto>>();
@@ -112,14 +120,14 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         var regA = await clientA.PostAsJsonAsync("/api/auth/register-parent",
             new RegisterParentRequest("idor_parent_a@test.com", "Password123!", "Parent A", null));
         Assert.Equal(HttpStatusCode.Created, regA.StatusCode);
-        var tokenA = (await regA.Content.ReadFromJsonAsync<AuthResponseDto>())!.Token;
+        var tokenA = await _factory.ConfirmAndLoginAsync("idor_parent_a@test.com");
         clientA.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
 
         // Register Parent B
         var regB = await clientB.PostAsJsonAsync("/api/auth/register-parent",
             new RegisterParentRequest("idor_parent_b@test.com", "Password123!", "Parent B", null));
         Assert.Equal(HttpStatusCode.Created, regB.StatusCode);
-        var tokenB = (await regB.Content.ReadFromJsonAsync<AuthResponseDto>())!.Token;
+        var tokenB = await _factory.ConfirmAndLoginAsync("idor_parent_b@test.com");
         clientB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
 
         // Parent B creates a child
@@ -148,7 +156,7 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         // Register Parent
         var regParent = await parentClient.PostAsJsonAsync("/api/auth/register-parent",
             new RegisterParentRequest("doc_test_parent@test.com", "Password123!", "Doc Test Parent", null));
-        var parentToken = (await regParent.Content.ReadFromJsonAsync<AuthResponseDto>())!.Token;
+        var parentToken = await _factory.ConfirmAndLoginAsync("doc_test_parent@test.com");
         parentClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
 
         // Parent creates Child
@@ -160,13 +168,15 @@ public class EndToEndFlowTests : IClassFixture<MindoraApiFactory>
         var regDoc1 = await doc1Client.PostAsJsonAsync("/api/auth/register-doctor",
             new RegisterDoctorRequest("assigned_doc@test.com", "Password123!", "Dr. One", "Pediatric Neurology", "City Hospital", "LIC-111"));
         var doc1Auth = await regDoc1.Content.ReadFromJsonAsync<AuthResponseDto>();
-        doc1Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", doc1Auth!.Token);
+        var doc1Token = await _factory.ConfirmAndLoginAsync("assigned_doc@test.com");
+        doc1Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", doc1Token);
 
         // Register Doctor 2
         var regDoc2 = await doc2Client.PostAsJsonAsync("/api/auth/register-doctor",
             new RegisterDoctorRequest("unassigned_doc@test.com", "Password123!", "Dr. Two", "Pediatric Therapy", "City Hospital", "LIC-222"));
         var doc2Auth = await regDoc2.Content.ReadFromJsonAsync<AuthResponseDto>();
-        doc2Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", doc2Auth!.Token);
+        var doc2Token = await _factory.ConfirmAndLoginAsync("unassigned_doc@test.com");
+        doc2Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", doc2Token);
 
         // Parent assigns Doctor 1 to the Child
         var assignRes = await parentClient.PostAsJsonAsync($"/api/children/{child.Id}/assign-doctor",

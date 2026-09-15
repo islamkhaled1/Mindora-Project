@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/app_colors.dart';
 import 'package:sawa/app_icons.dart';
 import 'package:sawa/screens/attention_screen.dart';
+import 'package:sawa/widgets/ai_status_banner.dart';
 import 'package:sawa/widgets/back_icon.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
 import 'package:sawa/widgets/custom_elevated_button.dart';
@@ -44,7 +45,7 @@ class PractiseInstructionAttention extends StatelessWidget {
                     'يتعلم عمر التمييز بين الأصوات\n واختيار الصورة الصحيحة.',
               ),
               SizedBox(height: 24.h),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: 260.h,
                 child: ExerciseTipsStack(
@@ -84,10 +85,17 @@ class PractiseInstructionAttention extends StatelessWidget {
                 text:
                     'هذا التمرين جزء من خطة عمر العلاجية\n لتحسين مهارة التواصل والتعبير.',
               ),
-              SizedBox(height: 32.h),
+              SizedBox(height: 16.h),
+              const AiStatusBanner(
+                domainName: 'الانتباه',
+                title: 'التحليل الذكي المتقدم قريبًا',
+                description:
+                    'نعمل حاليًا على تطوير نموذج AI مخصص لتحليل مهارات الانتباه.',
+              ),
+              SizedBox(height: 24.h),
               CustomElevatedButton(
                 width: 200.w,
-                title: 'حسنًا، لنبدأ!',
+                title: 'حسنًا، لنبدأ التدريب!',
                 onPressed: () {
                   Navigator.push(
                     context,

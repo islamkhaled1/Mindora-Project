@@ -534,11 +534,15 @@ env/
 .vscode/.browse.*
 
 # ==================================================
-# Monorepo Additions: OS & System Files
+# Monorepo Additions: Deployment artifacts & scratch
 # ==================================================
-.DS_Store
-.DS_Store?
-._*
-Thumbs.db
-ehthumbs.db
+backend_publish/
+backend_publish.zip
+scratch/
+*.png
+*.txt
+*.xml
+logs/
+*.log
+
 

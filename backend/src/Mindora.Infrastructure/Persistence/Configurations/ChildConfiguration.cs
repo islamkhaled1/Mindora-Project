@@ -40,6 +40,33 @@ public class ChildConfiguration : IEntityTypeConfiguration<Child>
         builder.Property(c => c.CreatedAtUtc)
             .IsRequired();
 
+        // P0 Child Profile Extensions from UI Audit
+        builder.Property(c => c.Gender)
+            .HasConversion<int>();
+
+        builder.Property(c => c.Diagnosis)
+            .HasMaxLength(200);
+
+        builder.Property(c => c.AvatarUrl)
+            .HasMaxLength(500);
+
+        builder.Property(c => c.SupportLevel)
+            .HasConversion<int>();
+
+        builder.Property(c => c.HearingStatus)
+            .HasConversion<int>();
+
+        builder.Property(c => c.VisionStatus)
+            .HasConversion<int>();
+
+        builder.Property(c => c.FocusDurationMinutes);
+
+        builder.Property(c => c.PreferredPracticeTime)
+            .HasMaxLength(100);
+
+        builder.Property(c => c.PreferredActivityType)
+            .HasConversion<int>();
+
         // Index on ParentId for rapid retrieval of parent's children
         builder.HasIndex(c => c.ParentId);
 

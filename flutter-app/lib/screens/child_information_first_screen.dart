@@ -16,6 +16,8 @@ import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/simi_bold_title.dart';
 import 'package:iconify_flutter/icons/zmdi.dart';
 import 'package:iconify_flutter/icons/healthicons.dart';
+import '../core/state/child_intake_state.dart';
+import '../core/utils/child_avatar_helper.dart';
 
 class ChildInformationFirstScreen extends StatefulWidget {
   ChildInformationFirstScreen({super.key});
@@ -34,6 +36,7 @@ class _ChildInformationFirstScreenState
   final _diagnosisController = TextEditingController();
   final _additionalInfoController = TextEditingController();
 
+  DateTime? _selectedBirthDate;
   String? selectedGender = 'male';
   bool _isLoading = false;
 
@@ -46,6 +49,22 @@ class _ChildInformationFirstScreenState
     super.dispose();
   }
 
+  DateTime? _resolveBirthDate() {
+    if (_selectedBirthDate != null) return _selectedBirthDate;
+    final text = _birthDateController.text.trim();
+    if (text.isEmpty) return null;
+    final parts = text.split('/');
+    if (parts.length == 3) {
+      final day = int.tryParse(parts[0]);
+      final month = int.tryParse(parts[1]);
+      final year = int.tryParse(parts[2]);
+      if (day != null && month != null && year != null) {
+        return DateTime(year, month, day);
+      }
+    }
+    return DateTime.tryParse(text);
+  }
+
   String? _validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'من فضلك أدخل اسم الطفل';
@@ -56,6 +75,13 @@ class _ChildInformationFirstScreenState
   String? _validateBirthDate(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'من فضلك اختر تاريخ الميلاد';
+    }
+    final parsed = _resolveBirthDate();
+    if (parsed == null) {
+      return 'تاريخ الميلاد غير صالح';
+    }
+    if (parsed.isAfter(DateTime.now())) {
+      return 'تاريخ الميلاد يجب أن يكون في الماضي';
     }
     return null;
   }
@@ -70,23 +96,33 @@ class _ChildInformationFirstScreenState
   Future<void> _handleContinue() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      // TODO: API Call
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ChildInformationSecondScreen()),
-      );
-    } catch (e) {
-      if (!mounted) return;
+    final birthDate = _resolveBirthDate();
+    if (birthDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        const SnackBar(content: Text('يرجى تحديد تاريخ ميلاد صالح')),
       );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      return;
     }
+
+    // Preserve Step 1 state and navigate to Step 2
+    final intakeState = ChildIntakeState(
+      fullName: _nameController.text.trim(),
+      birthDate: birthDate,
+      diagnosis: _diagnosisController.text.trim(),
+      gender: selectedGender,
+      supportNotes: _additionalInfoController.text.trim().isNotEmpty
+          ? _additionalInfoController.text.trim()
+          : null,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChildInformationSecondScreen(
+          intakeState: intakeState,
+        ),
+      ),
+    );
   }
 
   @override
@@ -124,7 +160,11 @@ class _ChildInformationFirstScreenState
                 ),
                 SizedBox(height: 24.h),
 
-                CustomImagePicker(defaultImage: 'assets/images/kid_image.png'),
+                CustomImagePicker(
+                  key: ValueKey(selectedGender),
+                  defaultImage:
+                      ChildAvatarHelper.resolve(gender: selectedGender),
+                ),
                 SizedBox(height: 16.h),
                 Align(
                   alignment: AlignmentGeometry.centerRight,
@@ -160,6 +200,9 @@ class _ChildInformationFirstScreenState
                     height: 50,
                     controller: _birthDateController,
                     validator: _validateBirthDate,
+                    onDateSelected: (date) {
+                      _selectedBirthDate = date;
+                    },
                   ),
                 ),
                 SizedBox(height: 4.h),

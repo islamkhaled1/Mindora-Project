@@ -114,6 +114,8 @@ public class GetSessionDetailsHandler
             session.EndTimeUtc,
             session.ActualDurationSeconds,
             analysisResultDto,
-            metrics);
+            metrics,
+            session.ParentRating?.ToString(),
+            session.ParentNotes);
     }
 }

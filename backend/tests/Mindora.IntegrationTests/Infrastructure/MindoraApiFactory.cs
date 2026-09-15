@@ -65,4 +65,31 @@ public class MindoraApiFactory : WebApplicationFactory<Program>
 
         builder.UseEnvironment("Testing");
     }
+
+    public async Task ConfirmUserEmailAsync(string email)
+    {
+        using var scope = Services.CreateScope();
+        var identityService = scope.ServiceProvider.GetRequiredService<IIdentityService>();
+        var user = await identityService.GetUserByEmailAsync(email);
+        if (user != null)
+        {
+            await identityService.ConfirmEmailAsync(user.Value.UserId);
+        }
+    }
+
+    public async Task<string> ConfirmAndLoginAsync(string email, string password = "Password123!")
+    {
+        await ConfirmUserEmailAsync(email);
+
+        var client = CreateClient();
+        var loginResponse = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(
+            client,
+            "/api/auth/login",
+            new Mindora.Application.Features.Auth.Login.LoginRequest(email, password));
+
+        var loginResult = await System.Net.Http.Json.HttpContentJsonExtensions.ReadFromJsonAsync<Mindora.Application.Features.Auth.Models.AuthResponseDto>(
+            loginResponse.Content);
+
+        return loginResult!.Token!;
+    }
 }

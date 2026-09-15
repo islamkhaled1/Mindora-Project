@@ -7,6 +7,9 @@ namespace Mindora.Application.Features.Doctor.Models;
 public record DoctorNeedsSupportAlertDto(
     Guid ChildId,
     string FullName,
+    int AgeYears,
+    decimal OverallAverageScore,
     string CurrentMovementLevel,
     string RecentTrend,
-    int DaysSinceLastSession);
+    int DaysSinceLastSession,
+    DateTime? LastSessionDateUtc = null);

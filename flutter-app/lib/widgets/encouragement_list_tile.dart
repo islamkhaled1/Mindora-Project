@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/icons/ci.dart';
 import 'package:sawa/app_colors.dart';
-import 'package:sawa/screens/practise_instruction_attention.dart';
 import 'package:sawa/widgets/custom_title.dart';
 import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/icon_circle_avatar.dart';
@@ -62,9 +61,11 @@ class EncouragmentListTile extends StatelessWidget {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Padding(
-                padding: EdgeInsets.only(bottom: 4.0.r),
-                child: CustomTitle(title: title, fontSize: 14),
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 4.0.r),
+                  child: CustomTitle(title: title, fontSize: 14),
+                ),
               ),
             ],
           ),

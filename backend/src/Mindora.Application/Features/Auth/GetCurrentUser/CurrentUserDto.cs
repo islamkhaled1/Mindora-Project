@@ -5,4 +5,8 @@ public record CurrentUserDto(
     string Email,
     string FullName,
     string Role,
-    Guid ProfileId);
+    Guid ProfileId,
+    string? Gender = null,
+    string? Specialization = null,
+    string? ClinicName = null,
+    string? ReferralCode = null);

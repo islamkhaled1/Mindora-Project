@@ -11,46 +11,48 @@ class CardContent extends StatelessWidget {
     required this.title,
     required this.description,
     required this.iconText,
+    this.onTap,
   });
   final String title;
   final String description;
   final String iconText;
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 180.w,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Spacer(),
-          SimiBoldTitle(title: title, fontSize: 16),
-          Spacer(),
-          Description(text: description, fontSize: 12, align: TextAlign.left),
-          Spacer(),
-          Container(
+          SimiBoldTitle(title: title, fontSize: 15),
+          SizedBox(height: 4.h),
+          Description(text: description, fontSize: 11, align: TextAlign.left),
+          SizedBox(height: 8.h),
+          SizedBox(
             width: 110.w,
-            height: 35.h,
+            height: 32.h,
             child: ElevatedButton(
-              onPressed: () {},
-
+              onPressed: onTap,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.r),
                 ),
                 side: BorderSide(color: AppColors.primaryColor, width: 1.5),
+                padding: EdgeInsets.zero,
               ),
-
               child: Text(
                 iconText,
                 style: AppTextStyles.font500Medium.copyWith(
-                  fontSize: 14,
+                  fontSize: 13,
                   color: AppColors.primaryColor,
                 ),
               ),
             ),
           ),
-          Spacer(),
         ],
       ),
     );

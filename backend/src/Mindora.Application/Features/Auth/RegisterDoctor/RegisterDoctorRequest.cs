@@ -6,4 +6,5 @@ public record RegisterDoctorRequest(
     string FullName,
     string Specialization,
     string? ClinicName,
-    string? LicenseNumber);
+    string? LicenseNumber,
+    string? Gender = null);

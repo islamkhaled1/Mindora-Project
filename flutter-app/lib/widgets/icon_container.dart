@@ -23,25 +23,31 @@ class IconContainer extends StatelessWidget {
   final double height;
   @override
   Widget build(BuildContext context) {
+    final iconBox = Container(
+      width: width.w,
+      height: height.h,
+      decoration: BoxDecoration(
+        color: backGroundColor,
+        borderRadius: BorderRadius.circular(15.r),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(5.0.r),
+        child: Iconify(icon, color: iconColor),
+      ),
+    );
+
+    if (label == null) {
+      return iconBox;
+    }
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: width.w,
-          height: height.h,
-          decoration: BoxDecoration(
-            color: backGroundColor,
-            borderRadius: BorderRadius.circular(15.r),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(5.0.r),
-            child: Iconify(icon, color: iconColor),
-          ),
+        iconBox,
+        Padding(
+          padding: EdgeInsets.only(top: 8.0.r),
+          child: CustomTitle(title: label!, fontSize: labelSize),
         ),
-        if (label != null)
-          Padding(
-            padding: EdgeInsets.only(top: 8.0.r),
-            child: CustomTitle(title: label!, fontSize: labelSize),
-          ),
       ],
     );
   }

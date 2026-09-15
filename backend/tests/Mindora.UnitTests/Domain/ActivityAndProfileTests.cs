@@ -65,6 +65,69 @@ public class ActivityAndProfileTests
         Assert.Equal("Speech-Language Pathologist", doctor.Specialization);
         Assert.Equal("Children's Therapy Center", doctor.ClinicName);
         Assert.Equal("LIC-98765", doctor.LicenseNumber);
+        Assert.StartsWith("DR-", doctor.ReferralCode);
+    }
+
+    [Fact]
+    public void DoctorProfile_With_Explicit_ReferralCode_Normalizes_Code()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act
+        var doctor = DoctorProfile.Create(userId, "Pediatric Neurologist", referralCode: "dr-custom123");
+
+        // Assert
+        Assert.Equal("DR-CUSTOM123", doctor.ReferralCode);
+    }
+
+    [Fact]
+    public void BaselineAssessment_With_Valid_Scores_Is_Created()
+    {
+        // Arrange
+        var childId = Guid.NewGuid();
+
+        // Act
+        var assessment = BaselineAssessment.Create(
+            childId,
+            overallScore: 85.5m,
+            cognitiveScore: 80.0m,
+            communicationScore: 88.0m,
+            motorScore: 92.0m,
+            emotionalScore: 78.5m);
+
+        // Assert
+        Assert.Equal(childId, assessment.ChildId);
+        Assert.Equal(85.5m, assessment.OverallScore);
+        Assert.Equal(80.0m, assessment.CognitiveScore);
+        Assert.Equal(88.0m, assessment.CommunicationScore);
+        Assert.Equal(92.0m, assessment.MotorScore);
+        Assert.Equal(78.5m, assessment.EmotionalScore);
+        Assert.True(assessment.CompletedAtUtc <= DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void BaselineAssessment_With_Empty_ChildId_Throws_DomainException()
+    {
+        // Act & Assert
+        Assert.Throws<DomainException>(() => BaselineAssessment.Create(
+            Guid.Empty, 80, 80, 80, 80, 80));
+    }
+
+    [Theory]
+    [InlineData(-1, 80, 80, 80, 80)]
+    [InlineData(101, 80, 80, 80, 80)]
+    [InlineData(80, -5, 80, 80, 80)]
+    [InlineData(80, 105, 80, 80, 80)]
+    [InlineData(80, 80, -10, 80, 80)]
+    [InlineData(80, 80, 80, -2, 80)]
+    [InlineData(80, 80, 80, 80, 150)]
+    public void BaselineAssessment_With_Out_Of_Range_Score_Throws_DomainException(
+        decimal overall, decimal cog, decimal comm, decimal motor, decimal emo)
+    {
+        // Act & Assert
+        Assert.Throws<DomainException>(() => BaselineAssessment.Create(
+            Guid.NewGuid(), overall, cog, comm, motor, emo));
     }
 
     [Fact]
@@ -91,5 +154,36 @@ public class ActivityAndProfileTests
 
         assignment.Reactivate();
         Assert.True(assignment.IsActive);
+    }
+
+    [Fact]
+    public void DoctorChildAssignment_Can_Update_DoctorNotes()
+    {
+        // Arrange
+        var assignment = DoctorChildAssignment.Create(Guid.NewGuid(), Guid.NewGuid());
+        Assert.Null(assignment.DoctorNotes);
+        Assert.Null(assignment.DoctorNotesUpdatedAtUtc);
+
+        // Act
+        assignment.UpdateDoctorNotes("Child shows steady progress in motor balance.");
+
+        // Assert
+        Assert.Equal("Child shows steady progress in motor balance.", assignment.DoctorNotes);
+        Assert.NotNull(assignment.DoctorNotesUpdatedAtUtc);
+
+        // Act - clear notes
+        assignment.UpdateDoctorNotes("   ");
+        Assert.Null(assignment.DoctorNotes);
+    }
+
+    [Fact]
+    public void DoctorChildAssignment_With_DoctorNotes_Exceeding_2000_Chars_Throws_DomainException()
+    {
+        // Arrange
+        var assignment = DoctorChildAssignment.Create(Guid.NewGuid(), Guid.NewGuid());
+        var longNote = new string('A', 2001);
+
+        // Act & Assert
+        Assert.Throws<DomainException>(() => assignment.UpdateDoctorNotes(longNote));
     }
 }

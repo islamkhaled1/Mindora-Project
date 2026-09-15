@@ -10,7 +10,9 @@ public record CompletedSessionDto(
     DateTime? EndTimeUtc,
     int? ActualDurationSeconds,
     SessionAnalysisResultDto? AnalysisResult,
-    IReadOnlyList<PerformanceMetricDto> Metrics);
+    IReadOnlyList<PerformanceMetricDto> Metrics,
+    string? ParentRating = null,
+    string? ParentNotes = null);
 
 public record SessionActivitySummaryDto(
     Guid Id,
@@ -28,4 +30,6 @@ public record SessionDetailsDto(
     DateTime? EndTimeUtc,
     int? ActualDurationSeconds,
     SessionAnalysisResultDto? AnalysisResult,
-    IReadOnlyList<PerformanceMetricDto> Metrics);
+    IReadOnlyList<PerformanceMetricDto> Metrics,
+    string? ParentRating = null,
+    string? ParentNotes = null);

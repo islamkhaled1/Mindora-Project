@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/icons/dashicons.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:sawa/constants.dart';
+import 'package:sawa/core/errors/api_exception.dart';
+import 'package:sawa/core/services/auth_service.dart';
 import 'package:sawa/screens/log_in_screen.dart';
 import 'package:sawa/screens/otp_verification_screen.dart';
 import 'package:sawa/widgets/auth_action_row.dart';
@@ -41,6 +43,10 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
     if (value == null || value.trim().isEmpty) {
       return 'من فضلك أدخل البريد الإلكتروني';
     }
+    final email = value.trim();
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      return 'صيغة البريد الإلكتروني غير صحيحة';
+    }
     return null;
   }
 
@@ -52,24 +58,81 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
   }
 
   Future<void> _handleSendCode() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailController.text.trim();
 
     setState(() => _isLoading = true);
 
     try {
-      // TODO: API Call
+      final result = await AuthService().forgotPassword(email);
+
       if (!mounted) return;
+
+      if (result.isWrongPlatform) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message.isNotEmpty
+                  ? result.message
+                  : 'هذا الحساب مسجل على لوحة تحكم الطبيب.\nلاستعادة كلمة المرور، يرجى استخدام لوحة تحكم الطبيب.',
+            ),
+            backgroundColor: Colors.amber.shade900,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'تسجيل الدخول',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LogInScreen()),
+                );
+              },
+            ),
+          ),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.message.isNotEmpty
+                ? result.message
+                : 'إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رمز التحقق.',
+          ),
+          backgroundColor: AppColors.primaryColor,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => OtpVerificationScreen()),
+        MaterialPageRoute(
+          builder: (context) => OtpVerificationScreen(email: email),
+        ),
       );
-    } catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('حدث خطأ، حاول مرة أخرى')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ أثناء إرسال رمز التحقق، يرجى المحاولة مرة أخرى'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

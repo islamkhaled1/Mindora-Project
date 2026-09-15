@@ -7,4 +7,6 @@ public record ChildSummaryDto(
     string CurrentMovementLevel,
     string CurrentSpeechLevel,
     string CurrentAttentionLevel,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? AvatarUrl = null,
+    string? Gender = null);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/icons/dashicons.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
@@ -6,7 +7,10 @@ import 'package:sawa/app_text_styles.dart';
 import 'package:sawa/constants.dart';
 import 'package:sawa/screens/child_information_first_screen.dart';
 import 'package:sawa/screens/forget_password_screen.dart';
+import 'package:sawa/screens/home_screen.dart';
 import 'package:sawa/screens/sign_up_screen.dart';
+import 'package:sawa/screens/verify_email_screen.dart';
+import '../core/storage/secure_storage_service.dart';
 import 'package:sawa/widgets/auth_action_row.dart';
 import 'package:sawa/widgets/custom_elevated_button.dart';
 import 'package:sawa/widgets/custom_padding.dart';
@@ -16,8 +20,18 @@ import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/divider_row.dart';
 import 'package:sawa/widgets/social_media_logos.dart';
 
+import '../core/errors/api_exception.dart';
+import '../core/models/auth_requests.dart';
+import '../core/state/auth_state.dart';
+import '../core/constants/api_endpoints.dart';
+import '../core/network/api_client.dart';
+
+import '../core/services/google_sign_in_service.dart';
+
 class LogInScreen extends StatefulWidget {
-  LogInScreen({super.key});
+  final IGoogleSignInProvider? googleSignInProvider;
+
+  LogInScreen({super.key, this.googleSignInProvider});
 
   @override
   State<LogInScreen> createState() => _LogInScreenState();
@@ -25,11 +39,24 @@ class LogInScreen extends StatefulWidget {
 
 class _LogInScreenState extends State<LogInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(
+    text: kDebugMode ? 'parent@mindora.com' : '',
+  );
+  final _passwordController = TextEditingController(
+    text: kDebugMode ? 'Parent123!' : '',
+  );
 
   bool isChecked = false;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kDebugMode) {
+      _emailController.text = 'parent@mindora.com';
+      _passwordController.text = 'Parent123!';
+    }
+  }
 
   @override
   void dispose() {
@@ -38,9 +65,13 @@ class _LogInScreenState extends State<LogInScreen> {
     super.dispose();
   }
 
-  String? _validateEmailOrPhone(String? value) {
+  String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'من فضلك أدخل البريد الإلكتروني أو رقم الهاتف';
+      return 'من فضلك أدخل البريد الإلكتروني';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'صيغة البريد الإلكتروني غير صحيحة';
     }
     return null;
   }
@@ -49,32 +80,177 @@ class _LogInScreenState extends State<LogInScreen> {
     if (value == null || value.isEmpty) {
       return 'من فضلك أدخل كلمة المرور';
     }
-    if (value.length < 6) {
-      return 'كلمة المرور يجب ألا تقل عن 6 أحرف';
+    if (value.length < 8) {
+      return 'كلمة المرور يجب ألا تقل عن 8 أحرف';
     }
     return null;
   }
 
   Future<void> _handleLogin() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // TODO: API Call
+      final request = LoginRequest(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      await AuthState.instance.login(request);
+
+      var activeChildId = await SecureStorageService().getActiveChildId();
+      try {
+        final res = await ApiClient().get(ApiEndpoints.children);
+        if (res.data is List && (res.data as List).isNotEmpty) {
+          final validIds = (res.data as List)
+              .map((c) => c['id']?.toString() ?? c['Id']?.toString())
+              .whereType<String>()
+              .toList();
+          if (activeChildId == null || !validIds.contains(activeChildId)) {
+            activeChildId = validIds.first;
+            await SecureStorageService().saveActiveChildId(activeChildId);
+          }
+        } else {
+          activeChildId = null;
+          await SecureStorageService().clearActiveChildId();
+        }
+      } catch (_) {}
+
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ChildInformationFirstScreen()),
+      if (activeChildId != null && activeChildId.trim().isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ChildInformationFirstScreen()),
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 403 || e.firstErrorMessage.contains('تأكيد البريد') || e.firstErrorMessage.contains('تأكيد حسابك')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.firstErrorMessage),
+            backgroundColor: Colors.orange.shade800,
+            duration: const Duration(seconds: 8),
+            action: SnackBarAction(
+              label: 'تأكيد الحساب',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VerifyEmailScreen(
+                      email: _emailController.text.trim(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('حدث خطأ، حاول مرة أخرى')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ في تسجيل الدخول، يرجى المحاولة مرة أخرى'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final googleProvider = widget.googleSignInProvider ?? GoogleSignInProvider();
+      final idToken = await googleProvider.signInAndGetIdToken();
+
+      if (idToken == null || idToken.trim().isEmpty) {
+        // User closed or cancelled account picker
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      await AuthState.instance.loginWithGoogle(idToken);
+
+      var activeChildId = await SecureStorageService().getActiveChildId();
+      try {
+        final res = await ApiClient().get(ApiEndpoints.children);
+        if (res.data is List && (res.data as List).isNotEmpty) {
+          final validIds = (res.data as List)
+              .map((c) => c['id']?.toString() ?? c['Id']?.toString())
+              .whereType<String>()
+              .toList();
+          if (activeChildId == null || !validIds.contains(activeChildId)) {
+            activeChildId = validIds.first;
+            await SecureStorageService().saveActiveChildId(activeChildId);
+          }
+        } else {
+          activeChildId = null;
+          await SecureStorageService().clearActiveChildId();
+        }
+      } catch (_) {}
+
+      if (!mounted) return;
+      if (activeChildId != null && activeChildId.trim().isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => ChildInformationFirstScreen()),
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ أثناء تسجيل الدخول باستخدام Google'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showComingSoonMessage() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('متاح في التحديث القادم'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -109,10 +285,11 @@ class _LogInScreenState extends State<LogInScreen> {
                 ),
                 SizedBox(height: 25.h),
                 CustomTextField(
-                  hint: 'البريد الإلكتروني أو رقم الهاتف',
+                  hint: 'البريد الإلكتروني',
                   icon: Dashicons.email_alt,
                   controller: _emailController,
-                  validator: _validateEmailOrPhone,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _validateEmail,
                 ),
                 SizedBox(height: 10.h),
                 CustomTextField(
@@ -176,7 +353,11 @@ class _LogInScreenState extends State<LogInScreen> {
                 SizedBox(height: 35.h),
                 DividerRow(text: 'أو سجّل الدخول باستخدام'),
                 SizedBox(height: 12.h),
-                SocialMediaLogos(),
+                SocialMediaLogos(
+                  onGoogleTap: _isLoading ? null : _handleGoogleSignIn,
+                  onFacebookTap: _isLoading ? null : _showComingSoonMessage,
+                  onAppleTap: _isLoading ? null : _showComingSoonMessage,
+                ),
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.r),
                   child: AuthActionRow(

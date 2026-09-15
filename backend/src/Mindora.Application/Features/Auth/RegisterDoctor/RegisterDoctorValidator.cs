@@ -1,4 +1,6 @@
+using System;
 using FluentValidation;
+using Mindora.Domain.Enums;
 
 namespace Mindora.Application.Features.Auth.RegisterDoctor;
 
@@ -28,5 +30,10 @@ public class RegisterDoctorValidator : AbstractValidator<RegisterDoctorRequest>
 
         RuleFor(x => x.LicenseNumber)
             .MaximumLength(100);
+
+        RuleFor(x => x.Gender)
+            .Must(g => string.IsNullOrWhiteSpace(g) ||
+                       (Enum.TryParse<DoctorGender>(g.Trim(), true, out var parsed) && parsed != DoctorGender.Other))
+            .WithMessage("Gender must be 'Male' or 'Female'.");
     }
 }

@@ -94,7 +94,8 @@ public class GetChildDetailsHandler
                     doc.Id,
                     doc.Specialization,
                     doc.ClinicName,
-                    a.AssignedAtUtc);
+                    a.AssignedAtUtc,
+                    doc.ReferralCode);
             })
             .ToList();
 
@@ -108,6 +109,15 @@ public class GetChildDetailsHandler
             child.CurrentSpeechLevel.ToString(),
             child.CurrentAttentionLevel.ToString(),
             child.CreatedAtUtc,
-            assignedDoctorsDto);
+            assignedDoctorsDto,
+            child.Gender?.ToString(),
+            child.Diagnosis,
+            child.AvatarUrl,
+            child.SupportLevel?.ToString(),
+            child.HearingStatus?.ToString(),
+            child.VisionStatus?.ToString(),
+            child.FocusDurationMinutes,
+            child.PreferredPracticeTime,
+            child.PreferredActivityType?.ToString());
     }
 }

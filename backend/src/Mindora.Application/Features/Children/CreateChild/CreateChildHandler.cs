@@ -57,7 +57,17 @@ public class CreateChildHandler
             request.SupportNotes,
             request.BaselineMovementLevel,
             request.BaselineSpeechLevel,
-            request.BaselineAttentionLevel);
+            request.BaselineAttentionLevel,
+            createdAtUtc: null,
+            gender: request.Gender,
+            diagnosis: request.Diagnosis,
+            avatarUrl: request.AvatarUrl,
+            supportLevel: request.SupportLevel,
+            hearingStatus: request.HearingStatus,
+            visionStatus: request.VisionStatus,
+            focusDurationMinutes: request.FocusDurationMinutes,
+            preferredPracticeTime: request.PreferredPracticeTime,
+            preferredActivityType: request.PreferredActivityType);
 
         _context.Add(child);
         await _context.SaveChangesAsync(cancellationToken);
@@ -71,6 +81,15 @@ public class CreateChildHandler
             child.CurrentMovementLevel.ToString(),
             child.CurrentSpeechLevel.ToString(),
             child.CurrentAttentionLevel.ToString(),
-            child.CreatedAtUtc);
+            child.CreatedAtUtc,
+            child.Gender?.ToString(),
+            child.Diagnosis,
+            child.AvatarUrl,
+            child.SupportLevel?.ToString(),
+            child.HearingStatus?.ToString(),
+            child.VisionStatus?.ToString(),
+            child.FocusDurationMinutes,
+            child.PreferredPracticeTime,
+            child.PreferredActivityType?.ToString());
     }
 }

@@ -5,7 +5,8 @@ import 'package:sawa/app_colors.dart';
 import 'package:sawa/app_icons.dart';
 
 class NotificationLeading extends StatelessWidget {
-  const NotificationLeading({super.key});
+  final VoidCallback? onTap;
+  const NotificationLeading({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +18,10 @@ class NotificationLeading extends StatelessWidget {
         color: AppColors.notificationColor,
       ),
       child: GestureDetector(
-        onTap: () {
-          Navigator.pop(context);
+        onTap: onTap ?? () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
         },
         child: Transform.scale(
           scale: 0.6,

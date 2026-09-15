@@ -51,6 +51,9 @@ public class GetDoctorDashboardHandler
                 0.00m,
                 0,
                 Array.Empty<DoctorNeedsSupportAlertDto>(),
+                Array.Empty<DoctorRecentSessionDto>(),
+                doctorProfile.ReferralCode,
+                Array.Empty<DoctorWeeklyTrendDto>(),
                 Array.Empty<DoctorRecentSessionDto>());
         }
 
@@ -77,6 +80,7 @@ public class GetDoctorDashboardHandler
             .ToDictionary(a => a.Id, a => a.Title);
 
         var now = DateTime.UtcNow;
+        var todayDate = DateOnly.FromDateTime(now);
         var sevenDaysAgo = now.AddDays(-7);
         var fourteenDaysAgo = now.AddDays(-14);
 
@@ -128,14 +132,27 @@ public class GetDoctorDashboardHandler
                 ? (int)Math.Max(0, (now - lastSessionTime.Value).TotalDays)
                 : 999;
 
+            int ageYears = todayDate.Year - child.DateOfBirth.Year;
+            if (child.DateOfBirth > todayDate.AddYears(-ageYears))
+            {
+                ageYears--;
+            }
+
+            decimal overallAvgScore = scores.Any()
+                ? Math.Round(scores.Average(), 2)
+                : 0.00m;
+
             if (trend == PerformanceTrend.NeedsSupport.ToString() || (childSessions.Any() && daysSinceLast > 14))
             {
                 needsSupportAlerts.Add(new DoctorNeedsSupportAlertDto(
                     child.Id,
                     child.FullName,
+                    Math.Max(0, ageYears),
+                    overallAvgScore,
                     child.CurrentMovementLevel.ToString(),
                     trend,
-                    daysSinceLast));
+                    daysSinceLast,
+                    lastSessionTime));
             }
         }
 
@@ -157,6 +174,50 @@ public class GetDoctorDashboardHandler
                 s.EndTimeUtc ?? s.StartTimeUtc);
         }).ToList();
 
+        // 6-week cohort progress trend (longitudinal performance curve for general progress chart)
+        var weeklyTrends = new List<DoctorWeeklyTrendDto>();
+        for (int i = 5; i >= 0; i--)
+        {
+            int weekNumber = 6 - i;
+            var windowStart = now.AddDays(-(i + 1) * 7);
+            var windowEnd = i == 0 ? now.AddMinutes(1) : now.AddDays(-i * 7);
+
+            var weekScores = completedSessions
+                .Where(s => s.StartTimeUtc >= windowStart && s.StartTimeUtc < windowEnd && analysisResults.ContainsKey(s.Id))
+                .Select(s => analysisResults[s.Id].OverallPerformanceScore)
+                .ToList();
+
+            decimal weekAvg = weekScores.Any()
+                ? Math.Round(weekScores.Average(), 2)
+                : 0.00m;
+
+            weeklyTrends.Add(new DoctorWeeklyTrendDto(
+                weekNumber,
+                $"أسبوع {weekNumber}",
+                weekAvg));
+        }
+
+        // Today's completed sessions
+        var startOfTodayUtc = DateTime.SpecifyKind(now.Date, DateTimeKind.Utc);
+        var todaySessions = completedSessions
+            .Where(s => s.StartTimeUtc >= startOfTodayUtc)
+            .Select(s =>
+            {
+                var childName = children.TryGetValue(s.ChildId, out var ch) ? ch.FullName : "Child";
+                var actTitle = activities.TryGetValue(s.ActivityId, out var title) ? title : "Activity";
+                decimal score = analysisResults.TryGetValue(s.Id, out var an) ? an.OverallPerformanceScore : 0.00m;
+
+                return new DoctorRecentSessionDto(
+                    s.Id,
+                    s.ChildId,
+                    childName,
+                    actTitle,
+                    s.Domain.ToString(),
+                    score,
+                    s.ActualDurationSeconds ?? 0,
+                    s.EndTimeUtc ?? s.StartTimeUtc);
+            }).ToList();
+
         return new DoctorDashboardDto(
             totalAssigned,
             activeChildrenCount,
@@ -164,7 +225,10 @@ public class GetDoctorDashboardHandler
             avgMovementScore,
             needsSupportAlerts.Count(a => a.RecentTrend == PerformanceTrend.NeedsSupport.ToString()),
             needsSupportAlerts,
-            recentSessions);
+            recentSessions,
+            doctorProfile.ReferralCode,
+            weeklyTrends,
+            todaySessions);
     }
 
     private static string CalculatePerformanceTrend(IReadOnlyList<decimal> descendingScores)

@@ -1,4 +1,5 @@
 using Mindora.Domain.Common;
+using Mindora.Domain.Enums;
 
 namespace Mindora.Domain.Entities;
 
@@ -12,7 +13,9 @@ public class DoctorProfile : BaseEntity
     public string Specialization { get; private set; } = string.Empty;
     public string? ClinicName { get; private set; }
     public string? LicenseNumber { get; private set; }
+    public string ReferralCode { get; private set; } = string.Empty;
     public DateTime CreatedAtUtc { get; private set; }
+    public DoctorGender? Gender { get; private set; }
 
     // Parameterless constructor for ORM deserialization
     protected DoctorProfile() : base()
@@ -25,7 +28,9 @@ public class DoctorProfile : BaseEntity
         string specialization,
         string? clinicName = null,
         string? licenseNumber = null,
-        DateTime? createdAtUtc = null) : base(id)
+        DateTime? createdAtUtc = null,
+        string? referralCode = null,
+        DoctorGender? gender = null) : base(id)
     {
         if (userId == Guid.Empty)
         {
@@ -42,6 +47,10 @@ public class DoctorProfile : BaseEntity
         ClinicName = clinicName?.Trim();
         LicenseNumber = licenseNumber?.Trim();
         CreatedAtUtc = createdAtUtc ?? DateTime.UtcNow;
+        ReferralCode = string.IsNullOrWhiteSpace(referralCode)
+            ? GenerateReferralCode()
+            : referralCode.Trim().ToUpperInvariant();
+        Gender = gender;
     }
 
     public static DoctorProfile Create(
@@ -49,9 +58,16 @@ public class DoctorProfile : BaseEntity
         string specialization,
         string? clinicName = null,
         string? licenseNumber = null,
-        DateTime? createdAtUtc = null)
+        DateTime? createdAtUtc = null,
+        string? referralCode = null,
+        DoctorGender? gender = null)
     {
-        return new DoctorProfile(Guid.NewGuid(), userId, specialization, clinicName, licenseNumber, createdAtUtc);
+        return new DoctorProfile(Guid.NewGuid(), userId, specialization, clinicName, licenseNumber, createdAtUtc, referralCode, gender);
+    }
+
+    public static string GenerateReferralCode()
+    {
+        return $"DR-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
     }
 
     public void UpdateProfessionalDetails(string specialization, string? clinicName, string? licenseNumber)
@@ -64,5 +80,10 @@ public class DoctorProfile : BaseEntity
         Specialization = specialization.Trim();
         ClinicName = clinicName?.Trim();
         LicenseNumber = licenseNumber?.Trim();
+    }
+
+    public void UpdateGender(DoctorGender? gender)
+    {
+        Gender = gender;
     }
 }

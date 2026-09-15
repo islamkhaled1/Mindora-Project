@@ -26,6 +26,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<PerformanceMetric> PerformanceMetrics => Set<PerformanceMetric>();
     public DbSet<SessionAnalysisResult> SessionAnalysisResults => Set<SessionAnalysisResult>();
     public DbSet<ChildLinkingCode> ChildLinkingCodes => Set<ChildLinkingCode>();
+    public DbSet<BaselineAssessment> BaselineAssessments => Set<BaselineAssessment>();
+    public DbSet<DoctorLinkRequest> DoctorLinkRequests => Set<DoctorLinkRequest>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 
     // IApplicationDbContext explicit interface implementations
     IQueryable<Child> IApplicationDbContext.Children => Children;
@@ -37,6 +41,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     IQueryable<PerformanceMetric> IApplicationDbContext.PerformanceMetrics => PerformanceMetrics;
     IQueryable<SessionAnalysisResult> IApplicationDbContext.SessionAnalysisResults => SessionAnalysisResults;
     IQueryable<ChildLinkingCode> IApplicationDbContext.ChildLinkingCodes => ChildLinkingCodes;
+    IQueryable<BaselineAssessment> IApplicationDbContext.BaselineAssessments => BaselineAssessments;
+    IQueryable<DoctorLinkRequest> IApplicationDbContext.DoctorLinkRequests => DoctorLinkRequests;
+    IQueryable<PasswordResetToken> IApplicationDbContext.PasswordResetTokens => PasswordResetTokens;
+    IQueryable<EmailVerificationToken> IApplicationDbContext.EmailVerificationTokens => EmailVerificationTokens;
 
     void IApplicationDbContext.Add<TEntity>(TEntity entity) where TEntity : class
     {

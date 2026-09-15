@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sawa/app_colors.dart';
-import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/icon_circle_avatar.dart';
 import 'package:sawa/widgets/simi_bold_title.dart';
 

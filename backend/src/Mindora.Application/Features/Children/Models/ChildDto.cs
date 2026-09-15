@@ -9,4 +9,13 @@ public record ChildDto(
     string CurrentMovementLevel,
     string CurrentSpeechLevel,
     string CurrentAttentionLevel,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? Gender = null,
+    string? Diagnosis = null,
+    string? AvatarUrl = null,
+    string? SupportLevel = null,
+    string? HearingStatus = null,
+    string? VisionStatus = null,
+    int? FocusDurationMinutes = null,
+    string? PreferredPracticeTime = null,
+    string? PreferredActivityType = null);

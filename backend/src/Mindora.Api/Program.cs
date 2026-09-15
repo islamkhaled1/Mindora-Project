@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Mindora.Api.Middleware;
 using Mindora.Application;
 using Mindora.Infrastructure;
+using Mindora.Infrastructure.Persistence;
 using Mindora.Infrastructure.Persistence.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,9 +18,20 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.UseCors();
 
 app.UseExceptionHandler();
 
@@ -26,6 +39,22 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Apply pending EF Core database migrations on startup
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<Mindora.Infrastructure.Persistence.ApplicationDbContext>();
+    if (db.Database.IsRelational())
+    {
+        await db.Database.MigrateAsync();
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogWarning(ex, "Automatic migration skipped or encountered error on startup.");
+}
 
 // Seed demo data if in Development and configured (safely caught in case DB is not yet created)
 if (app.Environment.IsDevelopment())

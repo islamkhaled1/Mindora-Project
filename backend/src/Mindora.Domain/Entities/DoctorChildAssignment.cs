@@ -11,6 +11,8 @@ public class DoctorChildAssignment : BaseEntity
     public Guid ChildId { get; private set; }
     public DateTime AssignedAtUtc { get; private set; }
     public bool IsActive { get; private set; }
+    public string? DoctorNotes { get; private set; }
+    public DateTime? DoctorNotesUpdatedAtUtc { get; private set; }
 
     // Parameterless constructor for ORM deserialization
     protected DoctorChildAssignment() : base()
@@ -22,7 +24,9 @@ public class DoctorChildAssignment : BaseEntity
         Guid doctorId,
         Guid childId,
         DateTime? assignedAtUtc = null,
-        bool isActive = true) : base(id)
+        bool isActive = true,
+        string? doctorNotes = null,
+        DateTime? doctorNotesUpdatedAtUtc = null) : base(id)
     {
         if (doctorId == Guid.Empty)
         {
@@ -34,10 +38,17 @@ public class DoctorChildAssignment : BaseEntity
             throw new DomainException("ChildId cannot be empty for DoctorChildAssignment.");
         }
 
+        if (doctorNotes != null && doctorNotes.Length > 2000)
+        {
+            throw new DomainException("Doctor notes cannot exceed 2000 characters.");
+        }
+
         DoctorId = doctorId;
         ChildId = childId;
         AssignedAtUtc = assignedAtUtc ?? DateTime.UtcNow;
         IsActive = isActive;
+        DoctorNotes = string.IsNullOrWhiteSpace(doctorNotes) ? null : doctorNotes.Trim();
+        DoctorNotesUpdatedAtUtc = doctorNotesUpdatedAtUtc;
     }
 
     public static DoctorChildAssignment Create(Guid doctorId, Guid childId, DateTime? assignedAtUtc = null)
@@ -53,5 +64,16 @@ public class DoctorChildAssignment : BaseEntity
     public void Reactivate()
     {
         IsActive = true;
+    }
+
+    public void UpdateDoctorNotes(string? notes, DateTime? updatedAtUtc = null)
+    {
+        if (notes != null && notes.Length > 2000)
+        {
+            throw new DomainException("Doctor notes cannot exceed 2000 characters.");
+        }
+
+        DoctorNotes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+        DoctorNotesUpdatedAtUtc = updatedAtUtc ?? DateTime.UtcNow;
     }
 }

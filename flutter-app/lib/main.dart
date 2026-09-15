@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/constants.dart';
 import 'package:sawa/screens/onboarding_screen.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'core/state/auth_state.dart';
 
 void configureEasyLoading() {
   EasyLoading.instance
@@ -21,8 +22,10 @@ void configureEasyLoading() {
     ..dismissOnTap = false;
 }
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   configureEasyLoading();
+  AuthState.instance.initialize();
   runApp(const SAWA());
 }
 

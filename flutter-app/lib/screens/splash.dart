@@ -15,12 +15,13 @@ class Splash1 extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: CustomAppBar(
-        leading: BackIcon(),
+        leading: Navigator.canPop(context) ? const BackIcon() : const SizedBox.shrink(),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
-            child: GestureDetector(
-              onTap: () {
+            child: TextButton(
+              key: const Key('skip_button'),
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => LogInScreen()),
@@ -47,7 +48,7 @@ class Splash1 extends StatelessWidget {
             children: [
               Splash(
                 image: 'assets/images/Frame1.png',
-                title: 'أنشئ خطة علاجية\n مخصصة لطفلك',
+                title: 'أنشئ خطة تدريبية داعمة\n مخصصة لطفلك',
                 text:
                     'أضف أهدافًا وتمارين تناسب احتياجات طفلك\n مع إرشادات من المتخصصين.',
               ),
@@ -55,7 +56,7 @@ class Splash1 extends StatelessWidget {
                 image: 'assets/images/Frame2.png',
                 title: 'تتبّع التقدم باستخدام \nالذكاء الاصطناعي',
                 text:
-                    ' قوم الذكاء الاصطناعي لدينا بتحليل الأداء وإظهار التحسن\n واقتراح ما يجب التركيز عليه بعد ذلك.',
+                    'يقوم الذكاء الاصطناعي لدينا بتحليل الأداء ومتابعة التطور\n واقتراح مستوى التحدي الأنسب للجلسة التالية.',
               ),
               Splash(
                 image: 'assets/images/frame3.png',

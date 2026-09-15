@@ -9,6 +9,7 @@ using Mindora.Application.Features.Children.CreateChild;
 using Mindora.Application.Features.Children.Models;
 using Mindora.Application.Features.Doctor.LinkChild;
 using Mindora.Application.Features.Doctor.Models;
+using Mindora.Application.Features.Doctor.Notes;
 using Mindora.Application.Features.Progress.Models;
 using Mindora.Application.Features.Sessions.CompleteSession;
 using Mindora.Application.Features.Sessions.Models;
@@ -40,6 +41,7 @@ public class DoctorAndDashboardFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal(HttpStatusCode.Created, docRegRes.StatusCode);
         var docAuth = await docRegRes.Content.ReadFromJsonAsync<AuthResponseDto>();
         Assert.NotNull(docAuth);
+        var docToken = await _factory.ConfirmAndLoginAsync("flow_doctor@test.com");
 
         // 2. Register Parent
         var parentRegRes = await client.PostAsJsonAsync("/api/auth/register-parent",
@@ -47,9 +49,10 @@ public class DoctorAndDashboardFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal(HttpStatusCode.Created, parentRegRes.StatusCode);
         var parentAuth = await parentRegRes.Content.ReadFromJsonAsync<AuthResponseDto>();
         Assert.NotNull(parentAuth);
+        var parentToken = await _factory.ConfirmAndLoginAsync("flow_parent2@test.com");
 
         // 3. Parent creates Child
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentAuth.Token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
         var createChildRes = await client.PostAsJsonAsync("/api/children",
             new CreateChildRequest("Clark Kent", new DateOnly(2018, 2, 28), "Movement evaluation", DifficultyLevel.Beginner, DifficultyLevel.Beginner, DifficultyLevel.Beginner));
         Assert.Equal(HttpStatusCode.Created, createChildRes.StatusCode);
@@ -64,7 +67,7 @@ public class DoctorAndDashboardFlowTests : IClassFixture<MindoraApiFactory>
         Assert.StartsWith("MND-", codeDto.Code);
 
         // 5. Doctor redeems Linking Code
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", docAuth.Token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", docToken);
         var linkRes = await client.PostAsJsonAsync("/api/doctor/link-child", new LinkChildRequest(codeDto.Code));
         Assert.Equal(HttpStatusCode.OK, linkRes.StatusCode);
         var linkDto = await linkRes.Content.ReadFromJsonAsync<DoctorAssignmentDto>();
@@ -96,7 +99,7 @@ public class DoctorAndDashboardFlowTests : IClassFixture<MindoraApiFactory>
         var activity = activities[0];
 
         // 9. Parent starts a session and then abandons it
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentAuth.Token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
         var startRes1 = await client.PostAsJsonAsync("/api/sessions", new StartSessionRequest(child.Id, activity.Id));
         Assert.Equal(HttpStatusCode.Created, startRes1.StatusCode);
         var session1 = await startRes1.Content.ReadFromJsonAsync<SessionDto>();
@@ -131,7 +134,7 @@ public class DoctorAndDashboardFlowTests : IClassFixture<MindoraApiFactory>
         Assert.NotNull(completed.AnalysisResult);
 
         // 11. Doctor inspects child Activity Performance
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", docAuth.Token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", docToken);
         var perfRes = await client.GetAsync($"/api/children/{child.Id}/activities/performance");
         Assert.Equal(HttpStatusCode.OK, perfRes.StatusCode);
         var perfList = await perfRes.Content.ReadFromJsonAsync<List<ActivityPerformanceDto>>();
@@ -160,5 +163,27 @@ public class DoctorAndDashboardFlowTests : IClassFixture<MindoraApiFactory>
         Assert.Equal(1, updatedDash.WeeklyCompletedSessions);
         Assert.Equal(1, updatedDash.ActiveChildrenCount);
         Assert.Single(updatedDash.RecentCompletedSessions);
+        Assert.NotNull(updatedDash.WeeklyProgressTrend);
+        Assert.Equal(6, updatedDash.WeeklyProgressTrend.Count);
+        Assert.NotNull(updatedDash.TodayCompletedSessions);
+        Assert.Single(updatedDash.TodayCompletedSessions);
+
+        // 14. Doctor updates clinical notes for the child
+        var updateNotesRes = await client.PutAsJsonAsync($"/api/doctor/children/{child.Id}/notes",
+            new UpdateDoctorNotesRequest("Child responded enthusiastically to motor exercises. Recommend continuing routine."));
+        Assert.Equal(HttpStatusCode.OK, updateNotesRes.StatusCode);
+        var updatedNoteDto = await updateNotesRes.Content.ReadFromJsonAsync<DoctorNotesDto>();
+        Assert.NotNull(updatedNoteDto);
+        Assert.Equal(child.Id, updatedNoteDto.ChildId);
+        Assert.Equal("Child responded enthusiastically to motor exercises. Recommend continuing routine.", updatedNoteDto.Notes);
+        Assert.NotNull(updatedNoteDto.UpdatedAtUtc);
+
+        // 15. Doctor retrieves the saved notes
+        var getNotesRes = await client.GetAsync($"/api/doctor/children/{child.Id}/notes");
+        Assert.Equal(HttpStatusCode.OK, getNotesRes.StatusCode);
+        var retrievedNoteDto = await getNotesRes.Content.ReadFromJsonAsync<DoctorNotesDto>();
+        Assert.NotNull(retrievedNoteDto);
+        Assert.Equal("Child responded enthusiastically to motor exercises. Recommend continuing routine.", retrievedNoteDto.Notes);
+        Assert.Equal(updatedNoteDto.UpdatedAtUtc, retrievedNoteDto.UpdatedAtUtc);
     }
 }

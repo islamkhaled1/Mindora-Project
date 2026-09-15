@@ -167,6 +167,12 @@ public class CompleteSessionHandler
         // Complete the session through Domain method
         session.Complete(DateTime.UtcNow, request.ActualDurationSeconds);
 
+        // Record parent feedback if provided at completion
+        if (request.ParentRating.HasValue)
+        {
+            session.RecordParentFeedback(request.ParentRating.Value, request.ParentNotes);
+        }
+
         // Create and attach SessionAnalysisResult
         var analysisResult = SessionAnalysisResult.Create(
             session.Id,
@@ -201,7 +207,9 @@ public class CompleteSessionHandler
             session.EndTimeUtc,
             session.ActualDurationSeconds,
             MapAnalysisResultDto(analysisResult),
-            finalMetricsList);
+            finalMetricsList,
+            session.ParentRating?.ToString(),
+            session.ParentNotes);
     }
 
     private static SessionAnalysisResultDto MapAnalysisResultDto(SessionAnalysisResult result)

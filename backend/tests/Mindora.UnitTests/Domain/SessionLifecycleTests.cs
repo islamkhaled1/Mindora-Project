@@ -179,4 +179,45 @@ public class SessionLifecycleTests
         var ex = Assert.Throws<DomainException>(() => session.AttachAnalysisResult(result));
         Assert.Contains("does not match this session ID", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void RecordParentFeedback_On_Completed_Session_Succeeds()
+    {
+        // Arrange
+        var session = Session.Start(_childId, _activityId, ActivityDomain.Movement, DateTime.UtcNow.AddMinutes(-10));
+        session.Complete(DateTime.UtcNow, 600);
+
+        // Act
+        session.RecordParentFeedback(ParentSentimentRating.Medium, "Child was focused but got slightly tired.");
+
+        // Assert
+        Assert.Equal(ParentSentimentRating.Medium, session.ParentRating);
+        Assert.Equal("Child was focused but got slightly tired.", session.ParentNotes);
+    }
+
+    [Fact]
+    public void RecordParentFeedback_On_Started_Session_Throws_DomainException()
+    {
+        // Arrange
+        var session = Session.Start(_childId, _activityId, ActivityDomain.Movement, DateTime.UtcNow.AddMinutes(-5));
+
+        // Act & Assert
+        var ex = Assert.Throws<DomainException>(() =>
+            session.RecordParentFeedback(ParentSentimentRating.Easy, "Too early"));
+        Assert.Contains("completed session", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RecordParentFeedback_With_Excessive_Notes_Length_Throws_DomainException()
+    {
+        // Arrange
+        var session = Session.Start(_childId, _activityId, ActivityDomain.Movement, DateTime.UtcNow.AddMinutes(-5));
+        session.Complete(DateTime.UtcNow);
+        var longNotes = new string('N', 1001);
+
+        // Act & Assert
+        var ex = Assert.Throws<DomainException>(() =>
+            session.RecordParentFeedback(ParentSentimentRating.Difficult, longNotes));
+        Assert.Contains("cannot exceed 1000 characters", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

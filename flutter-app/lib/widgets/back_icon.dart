@@ -3,7 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/app_colors.dart';
 
 class BackIcon extends StatelessWidget {
-  const BackIcon({super.key});
+  final VoidCallback? onTap;
+
+  const BackIcon({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +18,10 @@ class BackIcon extends StatelessWidget {
           border: Border.all(color: AppColors.primaryColor, width: 1.5),
         ),
         child: GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
+          onTap: onTap ?? () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
           },
           child: CircleAvatar(
             backgroundColor: Colors.white,

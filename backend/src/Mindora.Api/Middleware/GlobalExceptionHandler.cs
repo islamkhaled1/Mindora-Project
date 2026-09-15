@@ -55,6 +55,16 @@ public class GlobalExceptionHandler : IExceptionHandler
                     Instance = path
                 }),
 
+            BadRequestException badRequestEx => (
+                StatusCodes.Status400BadRequest,
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Bad Request",
+                    Detail = badRequestEx.Message,
+                    Instance = path
+                }),
+
             ValidationException validationEx => (
                 StatusCodes.Status400BadRequest,
                 new HttpValidationProblemDetails(validationEx.Errors.ToDictionary(k => k.Key, v => v.Value))
@@ -93,6 +103,21 @@ public class GlobalExceptionHandler : IExceptionHandler
                     Title = "Forbidden",
                     Detail = forbiddenEx.Message,
                     Instance = path
+                }),
+
+            EmailNotConfirmedException emailNotConfirmedEx => (
+                StatusCodes.Status403Forbidden,
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "EmailNotConfirmed",
+                    Detail = emailNotConfirmedEx.Message,
+                    Instance = path,
+                    Extensions =
+                    {
+                        ["email"] = emailNotConfirmedEx.Email,
+                        ["requiresEmailVerification"] = true
+                    }
                 }),
 
             ConflictException conflictEx => (

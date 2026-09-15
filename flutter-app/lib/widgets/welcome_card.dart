@@ -17,7 +17,8 @@ class WelcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 130.h,
+      constraints: BoxConstraints(minHeight: 130.h),
+      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 6.w),
       decoration: BoxDecoration(
         color: const Color(0xffF1E8FF),
         borderRadius: BorderRadius.circular(8.r),
@@ -32,25 +33,24 @@ class WelcomeCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Column(
-            children: [
-              Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Image.asset(image),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            child: Image.asset(
+              image,
+              height: 95.h,
+              fit: BoxFit.contain,
+            ),
           ),
-
           Flexible(
             child: Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SimiBoldTitle(title: title, fontSize: 16.sp),
-                  SizedBox(height: 8.h),
+                  SimiBoldTitle(title: title, fontSize: 14.sp),
+                  SizedBox(height: 6.h),
                   MediumTitle(
                     title: descripion,
                     fontSize: 11.sp,

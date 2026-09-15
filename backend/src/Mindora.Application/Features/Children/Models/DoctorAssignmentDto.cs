@@ -5,4 +5,7 @@ public record DoctorAssignmentDto(
     Guid DoctorId,
     Guid ChildId,
     DateTime AssignedAtUtc,
-    bool IsActive);
+    bool IsActive,
+    string? Specialization = null,
+    string? ClinicName = null,
+    string? DoctorName = null);

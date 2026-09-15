@@ -35,6 +35,11 @@ public class GetCurrentUserHandler
         }
 
         Guid profileId = Guid.Empty;
+        string? gender = null;
+        string? specialization = null;
+        string? clinicName = null;
+        string? referralCode = null;
+
         if (user.Value.Role == UserRole.Parent)
         {
             var parentProfile = _dbContext.ParentProfiles.FirstOrDefault(p => p.UserId == userId);
@@ -44,6 +49,10 @@ public class GetCurrentUserHandler
         {
             var doctorProfile = _dbContext.DoctorProfiles.FirstOrDefault(d => d.UserId == userId);
             profileId = doctorProfile?.Id ?? Guid.Empty;
+            gender = doctorProfile?.Gender?.ToString();
+            specialization = doctorProfile?.Specialization;
+            clinicName = doctorProfile?.ClinicName;
+            referralCode = doctorProfile?.ReferralCode;
         }
 
         return new CurrentUserDto(
@@ -51,6 +60,10 @@ public class GetCurrentUserHandler
             user.Value.Email,
             user.Value.FullName,
             user.Value.Role.ToString(),
-            profileId);
+            profileId,
+            gender,
+            specialization,
+            clinicName,
+            referralCode);
     }
 }

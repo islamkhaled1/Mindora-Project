@@ -33,6 +33,13 @@ public class SessionConfiguration : IEntityTypeConfiguration<Session>
 
         builder.Property(s => s.ActualDurationSeconds);
 
+        // P0 Parent Feedback Extensions from UI Audit
+        builder.Property(s => s.ParentRating)
+            .HasConversion<int>();
+
+        builder.Property(s => s.ParentNotes)
+            .HasMaxLength(1000);
+
         // Index on (ChildId, StartTimeUtc) for rapid longitudinal progress queries
         builder.HasIndex(s => new { s.ChildId, s.StartTimeUtc });
 

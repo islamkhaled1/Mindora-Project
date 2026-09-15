@@ -57,15 +57,15 @@ public class RecordMetricsValidator : AbstractValidator<RecordMetricsRequest>
             When(m => string.Equals(m.MetricType, "ReactionTimeMs", StringComparison.OrdinalIgnoreCase), () =>
             {
                 RuleFor(m => m.Value)
-                    .GreaterThanOrEqualTo(0m)
-                    .WithMessage("ReactionTimeMs cannot be negative.");
+                    .InclusiveBetween(0m, 10000m)
+                    .WithMessage("ReactionTimeMs must be between 0 and 10000.");
             });
 
             When(m => string.Equals(m.MetricType, "ResponseLatencyMs", StringComparison.OrdinalIgnoreCase), () =>
             {
                 RuleFor(m => m.Value)
-                    .GreaterThanOrEqualTo(0m)
-                    .WithMessage("ResponseLatencyMs cannot be negative.");
+                    .InclusiveBetween(0m, 10000m)
+                    .WithMessage("ResponseLatencyMs must be between 0 and 10000.");
             });
 
             When(m => string.Equals(m.MetricType, "AttentionDurationSeconds", StringComparison.OrdinalIgnoreCase), () =>

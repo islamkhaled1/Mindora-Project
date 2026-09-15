@@ -83,6 +83,11 @@ public static class DependencyInjection
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+        // Google Authentication Token Validator
+        var googleAuthSection = configuration.GetSection(GoogleAuthOptions.SectionName);
+        services.Configure<GoogleAuthOptions>(googleAuthSection);
+        services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+
         // Current User Context (Uses IHttpContextAccessor)
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -98,8 +103,18 @@ public static class DependencyInjection
         services.AddHttpClient<ExternalAiProviderClient>();
         services.AddScoped<IAiAnalysisService, ResilientAiAnalysisService>();
 
+        // AI Chatbot Configuration and Typed HTTP Client (Google Gemini API)
+        var chatSection = configuration.GetSection(ChatOptions.SectionName);
+        services.Configure<ChatOptions>(chatSection);
+        services.AddHttpClient<IChatAiClient, GeminiChatClient>();
+
         // Abuse Throttling Services
         services.AddSingleton<ILinkingRateLimiter, LinkingRateLimiter>();
+
+        // Email Service Configuration and Brevo SMTP Implementation
+        var emailSection = configuration.GetSection(EmailOptions.SectionName);
+        services.Configure<EmailOptions>(emailSection);
+        services.AddScoped<IEmailService, BrevoEmailService>();
 
         return services;
     }

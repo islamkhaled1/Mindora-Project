@@ -119,7 +119,10 @@ public class GetDoctorChildrenHandler
                 overallAvgScore,
                 recentTrend,
                 lastSessionDate,
-                assignment.AssignedAtUtc));
+                assignment.AssignedAtUtc,
+                child.Gender?.ToString(),
+                child.AvatarUrl,
+                child.SupportLevel?.ToString()));
         }
 
         return resultList;

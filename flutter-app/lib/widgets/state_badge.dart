@@ -26,16 +26,24 @@ class StateBadge extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          MediumTitle(title: ' دقائق', fontSize: 18),
-          CustomTitle(title: time, fontSize: 18),
-          MediumTitle(title: 'حوالي ', fontSize: 18),
-          CustomTitle(title: '•   ', fontSize: 18),
-          CustomTitle(title: exrecisesCount, fontSize: 18),
-          MediumTitle(title: 'تمارين ', fontSize: 18),
-        ],
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MediumTitle(title: ' دقائق', fontSize: 14),
+                CustomTitle(title: time, fontSize: 14),
+                MediumTitle(title: 'حوالي ', fontSize: 14),
+                CustomTitle(title: ' • ', fontSize: 14),
+                CustomTitle(title: exrecisesCount, fontSize: 14),
+                MediumTitle(title: 'تمارين ', fontSize: 14),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

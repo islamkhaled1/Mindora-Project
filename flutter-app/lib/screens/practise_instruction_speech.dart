@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/app_colors.dart';
 import 'package:sawa/app_icons.dart';
-import 'package:sawa/screens/speech_screen.dart';
+import 'package:sawa/widgets/ai_status_banner.dart';
 import 'package:sawa/widgets/back_icon.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
 import 'package:sawa/widgets/custom_elevated_button.dart';
@@ -44,7 +44,7 @@ class PractiseInstructionSpeech extends StatelessWidget {
                     'مساعدة عمر على تقليد الأصوات \nوالكلمات البسيطة للتعبير عن احتياجاته.',
               ),
               SizedBox(height: 24.h),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: 260.h,
                 child: ExerciseTipsStack(
@@ -84,14 +84,22 @@ class PractiseInstructionSpeech extends StatelessWidget {
                 text:
                     'هذا التمرين جزء من خطة عمر العلاجية\n لتحسين مهارة التواصل والتعبير.',
               ),
-              SizedBox(height: 32.h),
+              SizedBox(height: 16.h),
+              const AiStatusBanner(
+                domainName: 'النطق والكلام',
+                title: 'تحليل الكلام بالـ AI قريبًا',
+                description:
+                    'نعمل حاليًا على تطوير نموذج AI مخصص لدعم وتحليل مهارات النطق.',
+              ),
+              SizedBox(height: 24.h),
               CustomElevatedButton(
                 width: 200.w,
-                title: 'حسنًا، لنبدأ!',
+                title: 'حسنًا، لنبدأ التدريب!',
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SpeechScreen()),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تدريب النطق غير متاح حاليًا.'),
+                    ),
                   );
                 },
               ),

@@ -5,6 +5,7 @@ import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:sawa/app_text_styles.dart';
 import 'package:sawa/constants.dart';
 import 'package:sawa/screens/child_information_first_screen.dart';
+import 'package:sawa/screens/verify_email_screen.dart';
 import 'package:sawa/widgets/back_icon.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
 import 'package:sawa/widgets/custom_elevated_button.dart';
@@ -12,6 +13,10 @@ import 'package:sawa/widgets/custom_padding.dart';
 import 'package:sawa/widgets/custom_text_field.dart';
 import 'package:sawa/widgets/custom_title.dart';
 import 'package:sawa/widgets/description.dart';
+
+import '../core/errors/api_exception.dart';
+import '../core/models/auth_requests.dart';
+import '../core/state/auth_state.dart';
 
 class SignUpScreen extends StatefulWidget {
   SignUpScreen({super.key});
@@ -72,8 +77,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (value == null || value.isEmpty) {
       return 'من فضلك أدخل كلمة المرور';
     }
-    if (value.length < 6) {
-      return 'كلمة المرور يجب ألا تقل عن 6 أحرف';
+    if (value.length < 8) {
+      return 'كلمة المرور يجب ألا تقل عن 8 أحرف';
     }
     return null;
   }
@@ -89,6 +94,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _handleSignUp() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (!isChecked) {
@@ -103,16 +109,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: API Call
+      final phoneDigits = _phoneController.text.trim();
+      final fullPhoneNumber = phoneDigits.isNotEmpty
+          ? '$_selectedDialCode$phoneDigits'
+          : null;
+
+      final request = RegisterParentRequest(
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        phoneNumber: fullPhoneNumber,
+      );
+
+      final response = await AuthState.instance.registerParent(request);
+
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ChildInformationFirstScreen()),
+      if (response.requiresEmailVerification) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerifyEmailScreen(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ChildInformationFirstScreen()),
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.firstErrorMessage),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        const SnackBar(
+          content: Text('حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

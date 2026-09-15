@@ -20,6 +20,8 @@ public class DatabaseSeeder
     public const string DemoParentPassword = "Parent123!";
     public const string DemoDoctorEmail = "doctor@mindora.com";
     public const string DemoDoctorPassword = "Doctor123!";
+    public const string DemoDoctorSaraEmail = "dr.sara@mindora.com";
+    public const string DemoDoctorSaraPassword = "Doctor123!";
 
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -64,8 +66,10 @@ public class DatabaseSeeder
         await SeedRolesAsync();
         var (parentUser, parentProfile) = await SeedParentAsync();
         var (doctorUser, doctorProfile) = await SeedDoctorAsync();
+        var (saraUser, saraProfile) = await SeedSaraDoctorAsync();
         var child = await SeedChildAsync(parentProfile.Id);
         await SeedDoctorAssignmentAsync(doctorProfile.Id, child.Id);
+        await SeedDoctorAssignmentAsync(saraProfile.Id, child.Id);
         var activities = await SeedActivitiesAsync();
         await SeedHistoricalSessionsAsync(child.Id, activities);
 
@@ -152,10 +156,86 @@ public class DatabaseSeeder
                 user.Id,
                 specialization: "Pediatric Occupational & Speech Therapist",
                 clinicName: "Mindora Developmental Clinic",
-                licenseNumber: "LIC-OT-88941");
+                licenseNumber: "LIC-OT-88941",
+                gender: DoctorGender.Female);
 
             _context.DoctorProfiles.Add(profile);
             await _context.SaveChangesAsync();
+        }
+        else if (profile.Gender == null)
+        {
+            profile.UpdateGender(DoctorGender.Female);
+            await _context.SaveChangesAsync();
+        }
+
+        return (user, profile);
+    }
+
+    private async Task<(ApplicationUser User, DoctorProfile Profile)> SeedSaraDoctorAsync()
+    {
+        var user = await _userManager.FindByEmailAsync(DemoDoctorSaraEmail);
+        if (user == null)
+        {
+            user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = DemoDoctorSaraEmail,
+                Email = DemoDoctorSaraEmail,
+                EmailConfirmed = true,
+                FullName = "د. سارة أحمد",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            var createResult = await _userManager.CreateAsync(user, DemoDoctorSaraPassword);
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to create demo doctor Sara user: {errors}");
+            }
+
+            await _userManager.AddToRoleAsync(user, UserRole.Doctor.ToString());
+        }
+        else
+        {
+            // Self-healing: Ensure Arabic Unicode FullName is properly persisted
+            if (user.FullName != "د. سارة أحمد")
+            {
+                user.FullName = "د. سارة أحمد";
+                await _userManager.UpdateAsync(user);
+            }
+        }
+
+        var profile = await _context.DoctorProfiles.FirstOrDefaultAsync(d => d.UserId == user.Id);
+        if (profile == null)
+        {
+            profile = DoctorProfile.Create(
+                user.Id,
+                specialization: "استشاري علاج سلوكي وتخاطب للأطفال",
+                clinicName: "مركز الأمل لتأهيل الأطفال",
+                licenseNumber: "LIC-DOC-77210",
+                gender: DoctorGender.Female);
+
+            _context.DoctorProfiles.Add(profile);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            // Self-healing: Ensure Arabic specialization, clinic name, and Female gender
+            bool modified = false;
+            if (profile.Specialization != "استشاري علاج سلوكي وتخاطب للأطفال" || profile.ClinicName != "مركز الأمل لتأهيل الأطفال")
+            {
+                profile.UpdateProfessionalDetails("استشاري علاج سلوكي وتخاطب للأطفال", "مركز الأمل لتأهيل الأطفال", profile.LicenseNumber ?? "LIC-DOC-77210");
+                modified = true;
+            }
+            if (profile.Gender != DoctorGender.Female)
+            {
+                profile.UpdateGender(DoctorGender.Female);
+                modified = true;
+            }
+            if (modified)
+            {
+                await _context.SaveChangesAsync();
+            }
         }
 
         return (user, profile);

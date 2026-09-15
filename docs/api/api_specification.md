@@ -740,13 +740,17 @@ Validation error responses (HTTP 400):
     "weeklyCompletedSessions": 42,
     "averageMovementScore": 81.40,
     "needsSupportCount": 2,
+    "referralCode": "DR-8F92A1B0",
     "needsSupportAlerts": [
       {
         "childId": "c8a2b53a-0e9e-4c72-9a67-84bc13328e7e",
         "fullName": "Leo Jenkins",
+        "ageYears": 6,
+        "overallAverageScore": 66.50,
         "currentMovementLevel": "Beginner",
         "recentTrend": "NeedsSupport",
-        "daysSinceLastSession": 4
+        "daysSinceLastSession": 4,
+        "lastSessionDateUtc": "2026-09-04T10:00:00Z"
       }
     ],
     "recentCompletedSessions": [
@@ -759,6 +763,26 @@ Validation error responses (HTTP 400):
         "overallScore": 92.00,
         "durationSeconds": 240,
         "completedAtUtc": "2026-09-07T05:34:00Z"
+      }
+    ],
+    "weeklyProgressTrend": [
+      { "weekNumber": 1, "weekLabel": "أسبوع 1", "averageScore": 65.0 },
+      { "weekNumber": 2, "weekLabel": "أسبوع 2", "averageScore": 68.5 },
+      { "weekNumber": 3, "weekLabel": "أسبوع 3", "averageScore": 71.0 },
+      { "weekNumber": 4, "weekLabel": "أسبوع 4", "averageScore": 74.2 },
+      { "weekNumber": 5, "weekLabel": "أسبوع 5", "averageScore": 79.0 },
+      { "weekNumber": 6, "weekLabel": "أسبوع 6", "averageScore": 84.5 }
+    ],
+    "todayCompletedSessions": [
+      {
+        "sessionId": "b3e2a1c0-1234-5678-90ab-cdef01234567",
+        "childId": "c8a2b53a-0e9e-4c72-9a67-84bc13328e7e",
+        "childFullName": "Leo Jenkins",
+        "activityTitle": "Balance Line",
+        "domain": "Movement",
+        "overallScore": 88.0,
+        "durationSeconds": 180,
+        "completedAtUtc": "2026-09-08T09:30:00Z"
       }
     ]
   }
@@ -781,8 +805,11 @@ Validation error responses (HTTP 400):
     {
       "childId": "c8a2b53a-0e9e-4c72-9a67-84bc13328e7e",
       "fullName": "Leo Jenkins",
-      "dateOfBirth": "2019-04-15",
-      "ageYears": 7,
+      "dateOfBirth": "2020-04-15",
+      "ageYears": 6,
+      "gender": "Male",
+      "avatarUrl": "https://mindora.app/avatars/child1.png",
+      "supportLevel": "Moderate",
       "supportNotes": "Loves visual cues and counting games",
       "currentMovementLevel": "Beginner",
       "totalCompletedSessions": 12,
@@ -823,8 +850,52 @@ Validation error responses (HTTP 400):
   - `400 Bad Request`: Empty linking code or expired/invalid linking code.
   - `401 Unauthorized`: Unauthenticated.
   - `403 Forbidden`: Caller is not a Doctor.
-  - `404 Not Found`: Child profile associated with code not found.
+  - `404 NotFound`: Child profile associated with code not found.
   - `409 Conflict`: Child is already actively assigned to this doctor.
+
+### 7.4 Update Doctor Notes for Assigned Child
+- **Method**: `PUT`
+- **Route**: `/api/doctor/children/{childId}/notes`
+- **Authentication**: Bearer Token
+- **Authorization**: `Doctor` role only (verifies active assignment; returns `404 Not Found` if unassigned)
+- **Request Body**:
+  ```json
+  {
+    "notes": "Child responded enthusiastically to motor exercises. Recommend continuing routine."
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "childId": "c8a2b53a-0e9e-4c72-9a67-84bc13328e7e",
+    "notes": "Child responded enthusiastically to motor exercises. Recommend continuing routine.",
+    "updatedAtUtc": "2026-09-08T10:45:00Z"
+  }
+  ```
+- **Errors**:
+  - `400 Bad Request`: Notes exceed 2000 characters.
+  - `401 Unauthorized`: Unauthenticated.
+  - `403 Forbidden`: Caller is not a Doctor.
+  - `404 Not Found`: Child is not assigned to the authenticated doctor.
+
+### 7.5 Get Doctor Notes for Assigned Child
+- **Method**: `GET`
+- **Route**: `/api/doctor/children/{childId}/notes`
+- **Authentication**: Bearer Token
+- **Authorization**: `Doctor` role only (verifies active assignment; returns `404 Not Found` if unassigned)
+- **Response**: `200 OK`
+  ```json
+  {
+    "childId": "c8a2b53a-0e9e-4c72-9a67-84bc13328e7e",
+    "notes": "Child responded enthusiastically to motor exercises. Recommend continuing routine.",
+    "updatedAtUtc": "2026-09-08T10:45:00Z"
+  }
+  ```
+  *(If no note exists yet, `"notes"` and `"updatedAtUtc"` are `null`).*
+- **Errors**:
+  - `401 Unauthorized`: Unauthenticated.
+  - `403 Forbidden`: Caller is not a Doctor.
+  - `404 Not Found`: Child is not assigned to the authenticated doctor.
 
 ---
 

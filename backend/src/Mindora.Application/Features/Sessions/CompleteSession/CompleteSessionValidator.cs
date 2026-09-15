@@ -16,5 +16,12 @@ public class CompleteSessionValidator : AbstractValidator<CompleteSessionRequest
             RuleForEach(x => x.Metrics!)
                 .SetValidator(new RecordMetricsValidator.MetricItemValidator());
         });
+
+        RuleFor(x => x.ParentRating)
+            .IsInEnum().When(x => x.ParentRating.HasValue)
+            .WithMessage("Invalid parent rating value.");
+
+        RuleFor(x => x.ParentNotes)
+            .MaximumLength(1000).WithMessage("Parent notes must not exceed 1000 characters.");
     }
 }

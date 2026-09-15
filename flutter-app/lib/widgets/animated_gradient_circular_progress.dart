@@ -118,7 +118,7 @@ class GradientCircularProgress extends StatelessWidget {
               stops: gradientStops,
             ),
           ),
-          if (child != null) child!,
+          ?child,
         ],
       ),
     );

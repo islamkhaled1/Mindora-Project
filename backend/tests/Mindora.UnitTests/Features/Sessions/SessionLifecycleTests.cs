@@ -279,7 +279,17 @@ public class SessionLifecycleTests : IDisposable
         Assert.False((await validator.ValidateAsync(negLatency)).IsValid);
         Assert.False((await validator.ValidateAsync(negDuration)).IsValid);
 
-        // 4. Unknown metric type
+        // 4. ReactionTimeMs and ResponseLatencyMs upper bounds (max 10000ms)
+        var validReact3500 = new RecordMetricsRequest(new List<MetricInputDto> { new("ReactionTimeMs", 3500m) });
+        var validReact10000 = new RecordMetricsRequest(new List<MetricInputDto> { new("ReactionTimeMs", 10000m) });
+        var overMaxReact = new RecordMetricsRequest(new List<MetricInputDto> { new("ReactionTimeMs", 10001m) });
+        var overMaxLatency = new RecordMetricsRequest(new List<MetricInputDto> { new("ResponseLatencyMs", 10001m) });
+        Assert.True((await validator.ValidateAsync(validReact3500)).IsValid);
+        Assert.True((await validator.ValidateAsync(validReact10000)).IsValid);
+        Assert.False((await validator.ValidateAsync(overMaxReact)).IsValid);
+        Assert.False((await validator.ValidateAsync(overMaxLatency)).IsValid);
+
+        // 5. Unknown metric type
         var unknown = new RecordMetricsRequest(new List<MetricInputDto> { new("ArbitraryMetricName", 50m) });
         var resUnknown = await validator.ValidateAsync(unknown);
         Assert.False(resUnknown.IsValid);
