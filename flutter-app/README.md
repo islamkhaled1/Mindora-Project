@@ -4,7 +4,7 @@
 > **Version:** 1.0.0  
 > **Platform:** Android (iOS-ready)  
 > **Production API:** https://sawa-app.runasp.net  
-> **Download APK:** [app-release.apk](build/app/outputs/flutter-apk/app-release.apk) — 112 MB
+> **⬇️ Download APK:** [Sawa_App.apk — MediaFire](https://www.mediafire.com/file/j4fd7xcmoqoveez/Sawa_App.apk/file) (112 MB, Release Build)
 
 A production-grade Flutter mobile application built for children with Down syndrome and their parents. The app delivers three AI-powered therapy domains — **Movement**, **Attention**, and **Speech** — with real-time MediaPipe computer vision, Gemini AI chat, and a full clinical session tracking system.
 

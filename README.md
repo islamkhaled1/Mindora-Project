@@ -10,7 +10,7 @@
 
 | Component | URL |
 |-----------|-----|
-| 📱 Flutter App (Android APK) | `flutter-app/build/app/outputs/flutter-apk/app-release.apk` |
+| 📱 Flutter App (Android APK) | [⬇️ Download from MediaFire](https://www.mediafire.com/file/j4fd7xcmoqoveez/Sawa_App.apk/file) |
 | 🌐 Doctor Dashboard | https://doctor-dashboard-kappa-dun.vercel.app |
 | ⚙️ Backend API | https://sawa-app.runasp.net |
 | 🏥 API Health | https://sawa-app.runasp.net/health |
