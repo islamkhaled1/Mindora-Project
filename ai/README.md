@@ -1,5 +1,7 @@
 # 🤖 Mindora AI — Computer Vision, Speech & Chatbot
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![MediaPipe](https://img.shields.io/badge/MediaPipe-0.10.9-orange) ![Gemini](https://img.shields.io/badge/Gemini-Flash-purple)
+
 > Standalone AI/ML models and inference services powering Mindora's three core therapy domains: **Movement**, **Speech**, and **Attention**.
 
 ---

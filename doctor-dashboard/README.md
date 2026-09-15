@@ -1,4 +1,4 @@
-# 🦷 Mindora Doctor Dashboard
+# 🩺 Mindora Doctor Dashboard
 
 ![Live](https://img.shields.io/badge/Dashboard-Live-brightgreen) ![Platform](https://img.shields.io/badge/React-19-blue) ![Vercel](https://img.shields.io/badge/Vercel-Deployed-black)
 
