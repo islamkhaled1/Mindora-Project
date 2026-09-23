@@ -40,7 +40,7 @@ class PractiseScreen extends StatelessWidget {
             CustomTitle(title: 'تمارين اليوم', fontSize: 22),
             SizedBox(height: 10.h),
             Description(
-              text: 'تمارين مختارة لعمر بناءً على خطته العلاجية',
+              text: 'تمارين مختارة لعمر بناءً على خطة أنشطته المنزلية',
               fontSize: 12,
             ),
           ],

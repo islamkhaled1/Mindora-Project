@@ -545,8 +545,8 @@ class _AiAssessmentScreenState extends State<AiAssessmentScreen> {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 12.h),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Left: back button or placeholder
                 if (!_assessmentState.isFirstTask)
                   TextButton.icon(
                     onPressed: _isSubmitting
@@ -563,23 +563,27 @@ class _AiAssessmentScreenState extends State<AiAssessmentScreen> {
                 else
                   const SizedBox(width: 80),
 
-                CustomElevatedButton(
-                  title: _assessmentState.isLastTask
-                      ? 'إرسال التقييم'
-                      : 'التالي',
-                  isLoading: _isSubmitting,
-                  onPressed: !_assessmentState.isCurrentTaskAnswered ||
-                          _isSubmitting
-                      ? null
-                      : () {
-                          if (_assessmentState.isLastTask) {
-                            _handleSubmit();
-                          } else {
-                            setState(() => _assessmentState.nextTask());
-                          }
-                        },
-                  width: 140,
-                  height: 40,
+                SizedBox(width: 12.w),
+
+                // Right: main action button takes remaining space
+                Expanded(
+                  child: CustomElevatedButton(
+                    title: _assessmentState.isLastTask
+                        ? 'إرسال التقييم'
+                        : 'التالي',
+                    isLoading: _isSubmitting,
+                    onPressed: !_assessmentState.isCurrentTaskAnswered ||
+                            _isSubmitting
+                        ? null
+                        : () {
+                            if (_assessmentState.isLastTask) {
+                              _handleSubmit();
+                            } else {
+                              setState(() => _assessmentState.nextTask());
+                            }
+                          },
+                    height: 40,
+                  ),
                 ),
               ],
             ),
@@ -717,9 +721,9 @@ class _AiAssessmentScreenState extends State<AiAssessmentScreen> {
             ),
             SizedBox(height: 24.h),
 
-            // Action Button: "عرض الخطة العلاجية"
+            // Action Button: "عرض خطة الأنشطة"
             CustomElevatedButton(
-              title: 'عرض الخطة العلاجية',
+              title: 'عرض خطة الأنشطة',
               onPressed: () {
                 Navigator.pushReplacement(
                   context,

@@ -6,6 +6,7 @@ import 'package:sawa/core/errors/api_exception.dart';
 import 'package:sawa/core/models/activity_models.dart';
 import 'package:sawa/core/models/session_models.dart';
 import 'package:sawa/core/services/session_service.dart';
+import 'package:sawa/screens/home_screen.dart';
 import 'package:sawa/screens/session_result_screen.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
 
@@ -70,13 +71,19 @@ class _ParentObservationScreenState extends State<ParentObservationScreen> {
           ? _notesController.text.trim()
           : null;
 
-      await _sessionService.recordFeedback(
-        sessionId: widget.completedSession.id,
-        request: RecordFeedbackRequest(
-          rating: _selectedRating!,
-          notes: notes,
-        ),
-      );
+      // Only call backend API for real (GUID) sessions, skip for local sessions
+      final isLocalSession = widget.completedSession.id.startsWith('movement-') ||
+          widget.completedSession.id.startsWith('local-');
+
+      if (!isLocalSession) {
+        await _sessionService.recordFeedback(
+          sessionId: widget.completedSession.id,
+          request: RecordFeedbackRequest(
+            rating: _selectedRating!,
+            notes: notes,
+          ),
+        );
+      }
 
       final updatedSession = CompletedSessionModel(
         id: widget.completedSession.id,
@@ -159,7 +166,13 @@ class _ParentObservationScreenState extends State<ParentObservationScreen> {
               size: 16.r,
               color: AppColors.primaryColor,
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
+              );
+            },
           ),
         ),
       ),

@@ -18,6 +18,7 @@ import 'package:iconify_flutter/icons/zmdi.dart';
 import 'package:iconify_flutter/icons/healthicons.dart';
 import '../core/state/child_intake_state.dart';
 import '../core/utils/child_avatar_helper.dart';
+import '../widgets/diagnosis_selector.dart';
 
 class ChildInformationFirstScreen extends StatefulWidget {
   ChildInformationFirstScreen({super.key});
@@ -33,8 +34,9 @@ class _ChildInformationFirstScreenState
 
   final _nameController = TextEditingController();
   final _birthDateController = TextEditingController();
-  final _diagnosisController = TextEditingController();
   final _additionalInfoController = TextEditingController();
+
+  String _selectedDiagnosis = '';
 
   DateTime? _selectedBirthDate;
   String? selectedGender = 'male';
@@ -44,7 +46,6 @@ class _ChildInformationFirstScreenState
   void dispose() {
     _nameController.dispose();
     _birthDateController.dispose();
-    _diagnosisController.dispose();
     _additionalInfoController.dispose();
     super.dispose();
   }
@@ -88,7 +89,7 @@ class _ChildInformationFirstScreenState
 
   String? _validateDiagnosis(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'من فضلك أدخل تشخيص الحالة';
+      return 'من فضلك اختر تشخيص الحالة أو اكتبه في خانة أخرى';
     }
     return null;
   }
@@ -108,7 +109,9 @@ class _ChildInformationFirstScreenState
     final intakeState = ChildIntakeState(
       fullName: _nameController.text.trim(),
       birthDate: birthDate,
-      diagnosis: _diagnosisController.text.trim(),
+      diagnosis: _selectedDiagnosis.trim().isNotEmpty
+          ? _selectedDiagnosis.trim()
+          : null,
       gender: selectedGender,
       supportNotes: _additionalInfoController.text.trim().isNotEmpty
           ? _additionalInfoController.text.trim()
@@ -210,16 +213,14 @@ class _ChildInformationFirstScreenState
                   alignment: AlignmentGeometry.centerRight,
                   child: SimiBoldTitle(title: 'التشخيص', fontSize: 12),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4.0.r, top: 8.0.r),
-                  child: CustomTextField(
-                    hint: 'أدخل تشخيص الحالة',
-                    icon: Healthicons.stethoscope,
-                    height: 50,
-                    controller: _diagnosisController,
-                    validator: _validateDiagnosis,
-                    maxLines: 3,
-                  ),
+                SizedBox(height: 8.h),
+                DiagnosisSelector(
+                  onChanged: (diagnosis) {
+                    setState(() {
+                      _selectedDiagnosis = diagnosis;
+                    });
+                  },
+                  validator: _validateDiagnosis,
                 ),
                 SizedBox(height: 4.h),
                 Align(

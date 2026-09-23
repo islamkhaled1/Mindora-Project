@@ -13,6 +13,7 @@ import 'package:sawa/screens/practise_screen.dart';
 import 'package:sawa/screens/profile_screen.dart';
 import 'package:sawa/screens/session_result_screen.dart';
 import 'package:sawa/screens/treatment_plan_screen.dart';
+import 'package:sawa/screens/home_practice_plan_screen.dart';
 
 import 'package:flutter/services.dart';
 import 'package:sawa/core/config/env_config.dart';
@@ -106,11 +107,11 @@ void main() {
     'actualDurationSeconds': 600,
     'metrics': [],
     'analysisResult': {
-      'score': 85.0,
-      'encouragementMessage': 'عمل رائع!',
-      'strengths': ['سرعة الاستجابة'],
-      'improvements': ['التوازن'],
-      'suggestedNextDifficulty': 'Medium',
+      'overallPerformanceScore': 85.0,
+      'domainScore': 85.0,
+      'supportiveObservations': 'عمل رائع!',
+      'fatigueObserved': false,
+      'recommendedDifficultyAdjustment': 'Medium',
     },
   });
 
@@ -131,15 +132,15 @@ void main() {
 
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.byTooltip('الرئيسية'), findsOneWidget);
-      expect(find.byTooltip('الخطة العلاجية'), findsOneWidget);
+      expect(find.byTooltip('خطة الأنشطة'), findsOneWidget);
       expect(find.byTooltip('المساعد الذكي'), findsOneWidget);
       expect(find.byTooltip('التمارين'), findsOneWidget);
       expect(find.byTooltip('الملف الشخصي'), findsOneWidget);
 
-      // Switch to Treatment Plan
-      await tester.tap(find.byTooltip('الخطة العلاجية'));
+      // Switch to Activities Plan tab
+      await tester.tap(find.byTooltip('خطة الأنشطة'));
       await tester.pump(const Duration(milliseconds: 150));
-      expect(find.byType(TreatmentPlanScreen), findsOneWidget);
+      expect(find.byType(HomePracticePlanScreen), findsOneWidget);
 
       // Switch to AI Chat
       await tester.tap(find.byTooltip('المساعد الذكي'));
@@ -181,10 +182,10 @@ void main() {
       expect(find.text('المهارات الحركية'), findsOneWidget);
       expect(find.text('المهارات العاطفية'), findsOneWidget);
       expect(find.textContaining('يحرز طفلك تقدماً رائعاً'), findsOneWidget);
-      expect(find.text('عرض الخطة العلاجية'), findsOneWidget);
+      expect(find.text('عرض خطة الأنشطة'), findsOneWidget);
 
-      // Tap to navigate to Treatment Plan
-      final buttonFinder = find.text('عرض الخطة العلاجية');
+      // Tap to navigate to Activities Plan
+      final buttonFinder = find.text('عرض خطة الأنشطة');
       await tester.ensureVisible(buttonFinder);
       await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(buttonFinder);

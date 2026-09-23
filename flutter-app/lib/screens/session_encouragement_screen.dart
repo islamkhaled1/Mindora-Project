@@ -4,6 +4,7 @@ import 'package:sawa/app_text_styles.dart';
 import 'package:sawa/constants.dart';
 import 'package:sawa/core/models/activity_models.dart';
 import 'package:sawa/core/models/session_models.dart';
+import 'package:sawa/screens/home_screen.dart';
 import 'package:sawa/screens/session_result_screen.dart';
 
 class SessionEncouragementScreen extends StatelessWidget {
@@ -37,14 +38,10 @@ class SessionEncouragementScreen extends StatelessWidget {
               color: AppColors.primaryColor,
             ),
             onPressed: () {
-              Navigator.pushReplacement(
+              Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => SessionResultScreen(
-                    completedSession: completedSession,
-                    activity: activity,
-                  ),
-                ),
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
               );
             },
           ),

@@ -27,7 +27,7 @@ class CustomElevatedButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height.h,
-      width: width.w,
+      width: width.isFinite ? width.w : width,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
@@ -35,6 +35,9 @@ class CustomElevatedButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.primaryColor.withValues(alpha: 0.6),
           shadowColor: Colors.black,
           elevation: 5,
+          // Ensure the button never clips its text horizontally
+          minimumSize: Size(0, height.h),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.r),
           ),
@@ -54,6 +57,10 @@ class CustomElevatedButton extends StatelessWidget {
                   color: textColor,
                   fontSize: 16.sp,
                 ),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
       ),
     );

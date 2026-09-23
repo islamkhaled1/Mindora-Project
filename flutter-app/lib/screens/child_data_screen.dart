@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sawa/app_text_styles.dart';
 import 'package:sawa/constants.dart';
+import 'package:sawa/core/models/child_enums.dart';
 import 'package:sawa/core/models/child_model.dart';
 import 'package:sawa/core/services/children_service.dart';
 import 'package:sawa/core/storage/secure_storage_service.dart';
 import 'package:sawa/core/utils/child_avatar_helper.dart';
 
+/// View-only screen for a child's profile data.
+///
+/// Editing is intentionally disabled until PUT /api/children/{id} is
+/// implemented in the backend. The "تعديل البيانات" button shows a transparent
+/// bottom sheet rather than entering a fake edit mode.
 class ChildDataScreen extends StatefulWidget {
   final ChildModel? initialChild;
 
@@ -21,50 +27,39 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
   final SecureStorageService _storage = SecureStorageService();
 
   bool _isLoading = false;
-  bool _isEditing = false;
   String? _errorMessage;
   ChildModel? _child;
 
-  // Controllers for edit mode
-  late TextEditingController _nameController;
-  late TextEditingController _dobController;
-  late TextEditingController _diagnosisController;
-  late TextEditingController _supportLevelController;
-  late TextEditingController _notesController;
+  // Used only for avatar display — synced from _child.gender.
   String _selectedGender = 'Male';
 
   @override
   void initState() {
     super.initState();
     _child = widget.initialChild;
-    _initControllers();
+    _syncDisplayState();
     if (_child == null) {
       _loadChildData();
     }
   }
 
-  void _initControllers() {
-    _nameController = TextEditingController(text: _child?.fullName ?? '');
-    _dobController = TextEditingController(
-      text: _child?.dateOfBirth != null
-          ? _child!.dateOfBirth!.toIso8601String().split('T').first
-          : '',
-    );
-    _diagnosisController = TextEditingController(text: _child?.diagnosis ?? 'متلازمة داون');
-    _supportLevelController = TextEditingController(text: _child?.supportLevel ?? 'دعم متوسط');
-    _notesController = TextEditingController(text: _child?.supportNotes ?? 'لا توجد ملاحظات خاصة');
+  void _syncDisplayState() {
     _selectedGender = _child?.gender ?? 'Male';
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _dobController.dispose();
-    _diagnosisController.dispose();
-    _supportLevelController.dispose();
-    _notesController.dispose();
-    super.dispose();
+  // ─── Backend mapping helpers ───────────────────────────────────────────────
+
+  /// Converts backend SupportLevel ('Mild'/'Moderate'/'High') to Arabic label.
+  String _supportLevelArabic(String? raw) {
+    if (raw == null) return '';
+    final lower = raw.trim().toLowerCase();
+    if (lower == 'mild')     return SupportLevelTier.mild.arabicLabel;
+    if (lower == 'moderate') return SupportLevelTier.moderate.arabicLabel;
+    if (lower == 'high')     return SupportLevelTier.high.arabicLabel;
+    return raw; // fall back to raw if unknown
   }
+
+  // ─── Data loading ──────────────────────────────────────────────────────────
 
   Future<void> _loadChildData() async {
     setState(() {
@@ -86,7 +81,7 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
       if (mounted) {
         setState(() {
           _child = child;
-          _initControllers();
+          _syncDisplayState();
           _isLoading = false;
         });
       }
@@ -100,70 +95,103 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
     }
   }
 
-  void _handleSave() {
-    // Validate inputs
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال اسم الطفل بالكامل.')),
-      );
-      return;
-    }
+  // ─── UI helpers ───────────────────────────────────────────────────────────
 
-    // Transparent notification regarding backend contract without fake persistence
-    showDialog(
+  /// Shows a transparent "coming soon" bottom sheet when the user taps
+  /// "تعديل البيانات". No false edit mode is entered.
+  void _showEditComingSoon() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-        title: Row(
-          textDirection: TextDirection.rtl,
-          children: [
-            const Icon(Icons.info_outline_rounded, color: AppColors.secondaryTextColor),
-            SizedBox(width: 8.w),
-            Text(
-              'تنبيه الحفظ',
-              style: AppTextStyles.font700Bold.copyWith(
-                fontSize: 16.sp,
-                color: AppColors.primaryColor,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'خادم النظام لا يوفر حالياً واجهة برمجية لتعديل بيانات الطفل المسجل (Backend API Gap: No PUT /api/children).\n\nبيانات طفلك الحالية محفوظة ومعتمدة بدقة كما تم تسجيلها أول مرة.',
-          style: AppTextStyles.font400Regular.copyWith(
-            fontSize: 13.sp,
-            color: AppColors.primaryColor,
-            height: 1.5,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
           ),
-          textDirection: TextDirection.rtl,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _isEditing = false;
-              });
-            },
-            child: Text(
-              'حسناً',
-              style: AppTextStyles.font600SimiBold.copyWith(
-                color: AppColors.secondaryTextColor,
+          padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 32.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: AppColors.circleAvatarColor,
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
               ),
-            ),
+              SizedBox(height: 20.h),
+              Container(
+                width: 60.r,
+                height: 60.r,
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryTextColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.edit_off_outlined,
+                  size: 28.r,
+                  color: AppColors.secondaryTextColor,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'التعديل غير متاح حالياً',
+                style: AppTextStyles.font700Bold.copyWith(
+                  fontSize: 17.sp,
+                  color: AppColors.primaryColor,
+                ),
+                textDirection: TextDirection.rtl,
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                'بيانات طفلك محفوظة بدقة كما تم تسجيلها.\nإمكانية التعديل ستكون متاحة في التحديث القادم.',
+                style: AppTextStyles.font400Regular.copyWith(
+                  fontSize: 13.sp,
+                  color: AppColors.secondaryColor,
+                  height: 1.6,
+                ),
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
+              ),
+              SizedBox(height: 24.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondaryTextColor,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'حسناً، فهمت',
+                    style: AppTextStyles.font600SimiBold.copyWith(
+                      fontSize: 14.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
+  /// A read-only info card for a single profile field.
   Widget _buildFieldCard({
     required String label,
     required String value,
     required IconData icon,
-    Widget? customInput,
   }) {
+    final hasValue = value.isNotEmpty;
     return Container(
       margin: EdgeInsets.only(bottom: 14.h),
       child: Column(
@@ -179,91 +207,55 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
             textDirection: TextDirection.rtl,
           ),
           SizedBox(height: 6.h),
-          if (_isEditing && customInput != null)
-            customInput
-          else
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(color: AppColors.circleAvatarColor.withValues(alpha: 0.7)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryColor.withValues(alpha: 0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                textDirection: TextDirection.rtl,
-                children: [
-                  Icon(
-                    icon,
-                    size: 20.r,
-                    color: AppColors.primaryColor,
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Text(
-                      value.isNotEmpty ? value : 'غير محدد',
-                      style: AppTextStyles.font400Regular.copyWith(
-                        fontSize: 13.sp,
-                        color: AppColors.primaryColor,
-                      ),
-                      textDirection: TextDirection.rtl,
-                    ),
-                  ),
-                ],
-              ),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(
+                  color: AppColors.circleAvatarColor.withValues(alpha: 0.7)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryColor.withValues(alpha: 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Icon(icon, size: 20.r, color: AppColors.primaryColor),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    hasValue ? value : 'غير محدد',
+                    style: AppTextStyles.font400Regular.copyWith(
+                      fontSize: 13.sp,
+                      color: hasValue
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTextInput({
-    required TextEditingController controller,
-    required IconData icon,
-    String? hintText,
-    int maxLines = 1,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.secondaryTextColor.withValues(alpha: 0.4)),
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        textDirection: TextDirection.rtl,
-        style: AppTextStyles.font500Medium.copyWith(
-          fontSize: 13.sp,
-          color: AppColors.primaryColor,
-        ),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintTextDirection: TextDirection.rtl,
-          hintStyle: AppTextStyles.font400Regular.copyWith(
-            fontSize: 12.sp,
-            color: AppColors.secondaryColor.withValues(alpha: 0.7),
-          ),
-          prefixIcon: Icon(icon, color: AppColors.secondaryTextColor, size: 20.r),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        ),
-      ),
-    );
-  }
+  // ─── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final genderArabic = (_child?.gender?.toLowerCase() == 'female' || _selectedGender == 'Female')
-        ? 'أنثى'
-        : 'ذكر';
+    final genderArabic =
+        (_child?.gender?.toLowerCase() == 'female' || _selectedGender == 'Female')
+            ? 'أنثى'
+            : 'ذكر';
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
@@ -288,7 +280,7 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
           ),
         ),
         title: Text(
-          _isEditing ? 'تعديل بيانات الطفل' : 'بيانات الطفل',
+          'بيانات الطفل',
           style: AppTextStyles.font700Bold.copyWith(
             fontSize: 18.sp,
             color: AppColors.primaryColor,
@@ -297,7 +289,9 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.secondaryTextColor))
+            ? const Center(
+                child: CircularProgressIndicator(
+                    color: AppColors.secondaryTextColor))
             : _errorMessage != null
                 ? Center(
                     child: Padding(
@@ -305,7 +299,8 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.error_outline_rounded, size: 48.r, color: Colors.redAccent),
+                          Icon(Icons.error_outline_rounded,
+                              size: 48.r, color: Colors.redAccent),
                           SizedBox(height: 12.h),
                           Text(
                             _errorMessage!,
@@ -321,18 +316,21 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                             onPressed: _loadChildData,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.secondaryTextColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r)),
                             ),
-                            child: const Text('إعادة المحاولة', style: TextStyle(color: Colors.white)),
+                            child: const Text('إعادة المحاولة',
+                                style: TextStyle(color: Colors.white)),
                           ),
                         ],
                       ),
                     ),
                   )
                 : ListView(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 20.w, vertical: 12.h),
                     children: [
-                      // Avatar with camera badge
+                      // ── Avatar ─────────────────────────────────────────
                       Center(
                         child: Stack(
                           alignment: Alignment.bottomLeft,
@@ -342,11 +340,14 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                               height: 105.r,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.circleAvatarColor.withValues(alpha: 0.5),
-                                border: Border.all(color: Colors.white, width: 3.r),
+                                color: AppColors.circleAvatarColor
+                                    .withValues(alpha: 0.5),
+                                border:
+                                    Border.all(color: Colors.white, width: 3.r),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primaryColor.withValues(alpha: 0.08),
+                                    color: AppColors.primaryColor
+                                        .withValues(alpha: 0.08),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -355,17 +356,22 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                               child: ClipOval(
                                 child: Builder(
                                   builder: (context) {
-                                    final resolvedAvatar = ChildAvatarHelper.resolve(
+                                    final resolvedAvatar =
+                                        ChildAvatarHelper.resolve(
                                       gender: _selectedGender,
                                       avatarUrl: _child?.avatarUrl,
                                     );
-                                    final isNetwork = ChildAvatarHelper.isNetworkUrl(resolvedAvatar);
+                                    final isNetwork =
+                                        ChildAvatarHelper.isNetworkUrl(
+                                            resolvedAvatar);
                                     if (isNetwork) {
                                       return Image.network(
                                         resolvedAvatar,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Image.asset(
-                                          ChildAvatarHelper.resolve(gender: _selectedGender),
+                                        errorBuilder: (ctx, e, st) =>
+                                            Image.asset(
+                                          ChildAvatarHelper.resolve(
+                                              gender: _selectedGender),
                                           fit: BoxFit.cover,
                                         ),
                                       );
@@ -373,7 +379,7 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                                     return Image.asset(
                                       resolvedAvatar,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Icon(
+                                      errorBuilder: (ctx, e, st) => Icon(
                                         Icons.child_care_rounded,
                                         size: 55.r,
                                         color: AppColors.secondaryTextColor,
@@ -389,7 +395,8 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.secondaryTextColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2.r),
+                                border:
+                                    Border.all(color: Colors.white, width: 2.r),
                               ),
                               child: Icon(
                                 Icons.camera_alt_rounded,
@@ -402,149 +409,85 @@ class _ChildDataScreenState extends State<ChildDataScreen> {
                       ),
                       SizedBox(height: 24.h),
 
-                      // Full Name
+                      // ── Profile fields (view-only) ──────────────────────
                       _buildFieldCard(
                         label: 'اسم الطفل بالكامل',
                         value: _child?.fullName ?? '',
                         icon: Icons.person_rounded,
-                        customInput: _buildTextInput(
-                          controller: _nameController,
-                          icon: Icons.person_rounded,
-                          hintText: 'أدخل اسم الطفل',
-                        ),
                       ),
-
-                      // Date of Birth
                       _buildFieldCard(
                         label: 'تاريخ الميلاد',
                         value: _child?.dateOfBirth != null
-                            ? _child!.dateOfBirth!.toIso8601String().split('T').first
+                            ? _child!.dateOfBirth!
+                                .toIso8601String()
+                                .split('T')
+                                .first
                             : '',
                         icon: Icons.cake_rounded,
-                        customInput: _buildTextInput(
-                          controller: _dobController,
-                          icon: Icons.cake_rounded,
-                          hintText: 'YYYY-MM-DD',
-                        ),
                       ),
-
-                      // Diagnosis
                       _buildFieldCard(
                         label: 'الحالة التشخيصية',
-                        value: _child?.diagnosis ?? 'متلازمة داون',
+                        // ✅ No fake default — null → 'غير محدد'
+                        value: _child?.diagnosis ?? '',
                         icon: Icons.medical_services_rounded,
-                        customInput: _buildTextInput(
-                          controller: _diagnosisController,
-                          icon: Icons.medical_services_rounded,
-                          hintText: 'التشخيص الطبي',
-                        ),
                       ),
-
-                      // Gender Field / Radio
-                      if (_isEditing)
-                        Container(
-                          margin: EdgeInsets.only(bottom: 14.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            textDirection: TextDirection.rtl,
-                            children: [
-                              Text(
-                                'جنس الطفل',
-                                style: AppTextStyles.font600SimiBold.copyWith(
-                                  fontSize: 13.sp,
-                                  color: AppColors.primaryColor,
-                                ),
-                                textDirection: TextDirection.rtl,
-                              ),
-                              SizedBox(height: 6.h),
-                              Row(
-                                textDirection: TextDirection.rtl,
-                                children: [
-                                  Expanded(
-                                    child: RadioListTile<String>(
-                                      value: 'Male',
-                                      groupValue: _selectedGender,
-                                      title: const Text('ولد (ذكر)', textDirection: TextDirection.rtl),
-                                      activeColor: AppColors.secondaryTextColor,
-                                      onChanged: (val) {
-                                        if (val != null) setState(() => _selectedGender = val);
-                                      },
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: RadioListTile<String>(
-                                      value: 'Female',
-                                      groupValue: _selectedGender,
-                                      title: const Text('بنت (أنثى)', textDirection: TextDirection.rtl),
-                                      activeColor: AppColors.secondaryTextColor,
-                                      onChanged: (val) {
-                                        if (val != null) setState(() => _selectedGender = val);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        _buildFieldCard(
-                          label: 'الجنس',
-                          value: genderArabic,
-                          icon: Icons.wc_rounded,
-                        ),
-
-                      // Support Level
+                      _buildFieldCard(
+                        label: 'الجنس',
+                        value: genderArabic,
+                        icon: Icons.wc_rounded,
+                      ),
                       _buildFieldCard(
                         label: 'مستوى الدعم المطلوب',
-                        value: _child?.supportLevel ?? 'دعم متوسط',
+                        // ✅ Maps 'Mild'/'Moderate'/'High' → بسيط/متوسط/عالي
+                        value: _supportLevelArabic(_child?.supportLevel),
                         icon: Icons.favorite_rounded,
-                        customInput: _buildTextInput(
-                          controller: _supportLevelController,
-                          icon: Icons.favorite_rounded,
-                          hintText: 'مستوى الدعم المطلوب',
-                        ),
                       ),
-
-                      // Health Notes
+                      _buildFieldCard(
+                        label: 'أفضل وقت للممارسة',
+                        value: _child?.preferredPracticeTime ?? '',
+                        icon: Icons.schedule_rounded,
+                      ),
+                      _buildFieldCard(
+                        label: 'وقت تركيز الطفل',
+                        value: _child?.focusDurationMinutes != null
+                            ? '${_child!.focusDurationMinutes} دقيقة'
+                            : '',
+                        icon: Icons.timer_outlined,
+                      ),
                       _buildFieldCard(
                         label: 'ملاحظات صحية',
-                        value: _child?.supportNotes ?? 'لا توجد ملاحظات',
+                        value: _child?.supportNotes ?? '',
                         icon: Icons.edit_note_rounded,
-                        customInput: _buildTextInput(
-                          controller: _notesController,
-                          icon: Icons.edit_note_rounded,
-                          hintText: 'اكتب أي ملاحظات صحية أو نمائية',
-                          maxLines: 3,
-                        ),
                       ),
 
                       SizedBox(height: 16.h),
 
-                      // Action Button (تعديل البيانات or حفظ التغييرات)
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_isEditing) {
-                            _handleSave();
-                          } else {
-                            setState(() {
-                              _isEditing = true;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryTextColor,
-                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                      // ── Edit button ─────────────────────────────────────
+                      // TODO(backend): Replace with actual edit flow once
+                      // PUT /api/children/{id} is available.
+                      OutlinedButton.icon(
+                        onPressed: _showEditComingSoon,
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          size: 18.r,
+                          color: AppColors.secondaryTextColor,
+                        ),
+                        label: Text(
+                          'تعديل البيانات',
+                          style: AppTextStyles.font600SimiBold.copyWith(
+                            fontSize: 14.sp,
+                            color: AppColors.secondaryTextColor,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 13.h),
+                          side: BorderSide(
+                            color: AppColors.secondaryTextColor
+                                .withValues(alpha: 0.5),
+                            width: 1.5,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18.r),
-                          ),
-                          elevation: 1,
-                        ),
-                        child: Text(
-                          _isEditing ? 'حفظ التغييرات' : 'تعديل البيانات',
-                          style: AppTextStyles.font700Bold.copyWith(
-                            fontSize: 15.sp,
-                            color: Colors.white,
                           ),
                         ),
                       ),

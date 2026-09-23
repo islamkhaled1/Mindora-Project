@@ -31,9 +31,8 @@ class CardContent extends StatelessWidget {
           SizedBox(height: 4.h),
           Description(text: description, fontSize: 11, align: TextAlign.left),
           SizedBox(height: 8.h),
-          SizedBox(
-            width: 110.w,
-            height: 32.h,
+          ConstrainedBox(
+            constraints: BoxConstraints(minWidth: 100.w, maxWidth: 130.w),
             child: ElevatedButton(
               onPressed: onTap,
               style: ElevatedButton.styleFrom(
@@ -42,10 +41,14 @@ class CardContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10.r),
                 ),
                 side: BorderSide(color: AppColors.primaryColor, width: 1.5),
-                padding: EdgeInsets.zero,
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
+                minimumSize: Size(0, 32.h),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
                 iconText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.font500Medium.copyWith(
                   fontSize: 13,
                   color: AppColors.primaryColor,

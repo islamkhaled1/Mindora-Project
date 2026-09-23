@@ -69,7 +69,7 @@ class ConnectedSuccessfuly extends StatelessWidget {
 
               SizedBox(height: 16.h),
               Text(
-                'تم إرسال طلب ربط طفلك إلى الطبيب بنجاح.\nستتمكن من مشاركة التقييمات ومتابعة الخطة العلاجية فور اعتماد الطبيب للطلب.',
+                'تم إرسال طلب ربط طفلك إلى الطبيب بنجاح.\nستتمكن من مشاركة التقييمات ومتابعة الخطة مع الطبيب فور اعتماد الطبيب للطلب.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Readex Pro',

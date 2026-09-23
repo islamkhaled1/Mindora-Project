@@ -538,6 +538,7 @@ env/
 # ==================================================
 backend_publish/
 backend_publish.zip
+Mindora-App.apk
 scratch/
 *.png
 *.txt

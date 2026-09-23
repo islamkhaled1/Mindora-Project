@@ -485,7 +485,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               },
                             ),
                             _buildMenuItem(
-                              title: 'الخطة العلاجية',
+                              title: 'خطة الأنشطة المنزلية',
                               subtitle: 'التطور خطوة بخطوة',
                               icon: Icons.assignment_turned_in_rounded,
                               onTap: () {

@@ -62,7 +62,7 @@ class MovementEngine {
     this.cooldownMs = 500,
     this.minTargetSeparation = 0.20,
     this.minConfidence = 0.5,
-    double emaAlpha = 0.7,
+    double emaAlpha = 0.85, // raised from 0.7: more responsive at 20 FPS (50ms interval)
     int? randomSeed,
   })  : _random = Random(randomSeed),
         _ema = ExponentialMovingAverage(alpha: emaAlpha);

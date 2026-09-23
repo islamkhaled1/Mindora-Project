@@ -45,7 +45,13 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
     if (analysis != null && analysis.overallPerformanceScore > 0) {
       return analysis.overallPerformanceScore;
     }
-    return 85.0;
+    // Calculate from actual session metrics instead of hardcoded fallback
+    for (final metric in widget.completedSession.metrics) {
+      if (metric.metricType.toLowerCase() == 'accuracypercentage') {
+        return metric.value.clamp(0.0, 100.0);
+      }
+    }
+    return 0.0;
   }
 
   String _getQualitativeScoreLabel(double score) {
@@ -81,15 +87,11 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
               color: AppColors.primaryColor,
             ),
             onPressed: () {
-              if (_currentStep == 2) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  (route) => false,
-                );
-              } else {
-                Navigator.pop(context);
-              }
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
+              );
             },
           ),
         ),
@@ -539,6 +541,8 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                   ),
                   child: Text(
                     'العوده للرئيسية',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.font700Bold.copyWith(
                       fontSize: 15.sp,
                       color: Colors.white,
@@ -573,6 +577,8 @@ class _SessionResultScreenState extends State<SessionResultScreen> {
                   ),
                   child: Text(
                     'عرض التقدم',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.font700Bold.copyWith(
                       fontSize: 15.sp,
                       color: AppColors.primaryColor,

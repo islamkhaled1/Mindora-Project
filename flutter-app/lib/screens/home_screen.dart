@@ -20,6 +20,7 @@ import 'package:sawa/screens/child_information_first_screen.dart';
 import 'package:sawa/screens/practise_screen.dart';
 import 'package:sawa/screens/profile_screen.dart';
 import 'package:sawa/screens/progress_screen.dart';
+import 'package:sawa/screens/home_practice_plan_screen.dart';
 import 'package:sawa/screens/treatment_plan_screen.dart';
 import 'package:sawa/widgets/animated_gradient_circular_progress.dart';
 import 'package:sawa/widgets/custom_app_bar.dart';
@@ -241,10 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _buildBody(),
               ),
             ),
-            TreatmentPlanScreen(
+            const HomePracticePlanScreen(
               showBackButton: false,
-              initialBaseline: _baseline,
-              initialActivities: _activities,
             ),
             const AiChatScreen(
               showBackButton: false,
@@ -340,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
               index: 1,
               activeIcon: Icons.assignment_rounded,
               inactiveIcon: Icons.assignment_outlined,
-              tooltip: 'الخطة العلاجية',
+              tooltip: 'خطة الأنشطة',
             ),
             _buildNavTabItem(
               index: 2,
@@ -1067,7 +1066,7 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.r),
               ),
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
             ),
             onPressed: () {
               Navigator.push(
@@ -1079,6 +1078,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: Text(
               'تحدث الآن',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.font600SimiBold.copyWith(
                 fontSize: 11.sp,
                 color: AppColors.primaryColor,

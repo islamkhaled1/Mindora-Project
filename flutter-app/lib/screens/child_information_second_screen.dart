@@ -214,7 +214,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ant_design.dart';
-import 'package:iconify_flutter/icons/bxs.dart';
 import 'package:sawa/constants.dart';
 import 'package:sawa/screens/doctor_or_ai_screen.dart';
 import 'package:sawa/widgets/back_icon.dart';
@@ -223,12 +222,9 @@ import 'package:sawa/widgets/custom_elevated_button.dart';
 import 'package:sawa/widgets/custom_multi_select.dart';
 import 'package:sawa/widgets/custom_padding.dart';
 import 'package:sawa/widgets/custom_radio_group.dart';
-import 'package:sawa/widgets/custom_text_field.dart';
-import 'package:sawa/widgets/custom_time_range_field.dart';
 import 'package:sawa/widgets/custom_title.dart';
 import 'package:sawa/widgets/description.dart';
 import 'package:sawa/widgets/simi_bold_title.dart';
-import 'package:iconify_flutter/icons/entypo.dart';
 import 'package:iconify_flutter/icons/material_symbols.dart';
 import '../core/errors/api_exception.dart';
 import '../core/models/child_enums.dart';
@@ -249,93 +245,57 @@ class _ChildInformationSecondScreenState
     extends State<ChildInformationSecondScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _supportLevelController = TextEditingController();
-  final _timeRangeController = TextEditingController();
-  final _focusDurationController = TextEditingController();
-
   late final ChildIntakeState _intakeState =
       widget.intakeState ?? ChildIntakeState();
 
-  TimeOfDay? startTime;
-  TimeOfDay? endTime;
+  SupportLevelTier? _selectedSupportTier;
+  String? _selectedPracticeSlot; // e.g. 'صباحاً'
+  int? _selectedFocusMinutes;   // e.g. 15
   String? hearingStatus;
   String? visionStatus;
   List<String> preferredActivities = [];
   bool _isLoading = false;
 
+  // ─── Preset options ───────────────────────────────────────────────
+  static const List<_PracticeSlot> _practiceSlots = [
+    _PracticeSlot(label: '🌅 صباحاً',  value: 'صباحاً'),
+    _PracticeSlot(label: '☀️ ظهراً',   value: 'ظهراً'),
+    _PracticeSlot(label: '🌆 مساءً',   value: 'مساءً'),
+    _PracticeSlot(label: '🌙 ليلاً',   value: 'ليلاً'),
+  ];
+
+  static const List<int> _focusOptions = [5, 10, 15, 20, 30, 45];
+
   @override
   void dispose() {
-    _supportLevelController.dispose();
-    _timeRangeController.dispose();
-    _focusDurationController.dispose();
     super.dispose();
   }
 
-  String? _validateSupportLevel(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'من فضلك أدخل درجة الدعم';
-    }
-    final tier = SupportLevelTier.fromUserInput(value);
-    if (tier == null) {
-      return 'يرجى إدخال درجة دعم صالحة (بسيط، متوسط، عالي)';
-    }
-    return null;
-  }
 
-  String? _validateTimeRange(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'من فضلك حدد النطاق الزمني';
-    }
-    return null;
-  }
-
-  String? _validateFocusDuration(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'من فضلك حدد المدة';
-    }
-    final match = RegExp(r'\d+').firstMatch(value);
-    if (match == null) {
-      return 'يرجى إدخال مدة تركيز صالحة بالدقائق (مثال: 15)';
-    }
-    final minutes = int.tryParse(match.group(0)!);
-    if (minutes == null || minutes < 1 || minutes > 240) {
-      return 'مدة التركيز يجب أن تكون بين 1 و 240 دقيقة';
-    }
-    return null;
-  }
 
   Future<void> _handleContinue() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final supportTier =
-        SupportLevelTier.fromUserInput(_supportLevelController.text);
-    if (supportTier == null) {
+    // Validate support tier selection first
+    if (_selectedSupportTier == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('يرجى إدخال درجة دعم صالحة (بسيط، متوسط، عالي)'),
+          content: Text('يرجى اختيار مستوى الدعم المطلوب'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    int? parsedFocusDuration;
-    final focusMatch =
-        RegExp(r'\d+').firstMatch(_focusDurationController.text);
-    if (focusMatch != null) {
-      parsedFocusDuration = int.tryParse(focusMatch.group(0)!);
-    }
+    if (!_formKey.currentState!.validate()) return;
+
+    final parsedFocusDuration = _selectedFocusMinutes;
 
     setState(() => _isLoading = true);
 
     try {
       // Populate Step 2 data into intakeState
-      _intakeState.rawSupportLevelText = _supportLevelController.text.trim();
-      _intakeState.supportLevelTier = supportTier;
-      _intakeState.preferredPracticeTime =
-          _timeRangeController.text.trim().isNotEmpty
-              ? _timeRangeController.text.trim()
-              : null;
+      _intakeState.rawSupportLevelText = _selectedSupportTier!.arabicLabel;
+      _intakeState.supportLevelTier = _selectedSupportTier;
+      _intakeState.preferredPracticeTime = _selectedPracticeSlot;
       _intakeState.focusDurationMinutes = parsedFocusDuration;
       _intakeState.hearingStatus = hearingStatus;
       _intakeState.visionStatus = visionStatus;
@@ -407,16 +367,69 @@ class _ChildInformationSecondScreenState
                     fontSize: 12,
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4.0.r, top: 8.0.r),
-                  child: CustomTextField(
-                    hint: 'درجة الدعم',
-                    height: 50,
-                    controller: _supportLevelController,
-                    validator: _validateSupportLevel,
-                  ),
+                SizedBox(height: 10.h),
+                Row(
+                  children: SupportLevelTier.values.reversed.map((tier) {
+                    final isSelected = _selectedSupportTier == tier;
+                    final colors = {
+                      SupportLevelTier.mild: const Color(0xff6DAA60),
+                      SupportLevelTier.moderate: const Color(0xffFDB62C),
+                      SupportLevelTier.high: const Color(0xffCF6F69),
+                    };
+                    final activeColor = colors[tier]!;
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4.w),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedSupportTier = tier;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 56.h,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? activeColor
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: isSelected
+                                    ? activeColor
+                                    : const Color(0xffD6D6D6),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                tier.arabicLabel,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.primaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 12.h),
+                // ─── Practice time slot ───────────────────────────────
                 Align(
                   alignment: AlignmentGeometry.centerRight,
                   child: SimiBoldTitle(
@@ -424,25 +437,66 @@ class _ChildInformationSecondScreenState
                     fontSize: 12,
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4.0.r, top: 8.0.r),
-                  child: CustomTimeRangeField(
-                    hint: 'حدد النطاق الزمني',
-                    suffixIcon: Iconify(
-                      Bxs.time_five,
-                      color: AppColors.primaryColor,
-                    ),
-                    controller: _timeRangeController,
-                    validator: _validateTimeRange,
-                    onTimeRangeSelected: (from, to) {
-                      setState(() {
-                        startTime = from;
-                        endTime = to;
-                      });
-                    },
-                  ),
+                SizedBox(height: 10.h),
+                Row(
+                  children: _practiceSlots.map((slot) {
+                    final isSelected = _selectedPracticeSlot == slot.value;
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4.w),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedPracticeSlot = slot.value;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 52.h,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryColor
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primaryColor
+                                    : const Color(0xffD6D6D6),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                slot.label,
+                                textAlign: TextAlign.center,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11.5.sp,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.primaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 16.h),
+                // ─── Focus duration chips ─────────────────────────────
                 Align(
                   alignment: AlignmentGeometry.centerRight,
                   child: SimiBoldTitle(
@@ -450,15 +504,59 @@ class _ChildInformationSecondScreenState
                     fontSize: 12,
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 4.0.r, top: 8.0.r),
-                  child: CustomTextField(
-                    hint: 'حدد المدة',
-                    height: 50,
-                    prefixIcon: Entypo.hour_glass,
-                    controller: _focusDurationController,
-                    validator: _validateFocusDuration,
-                  ),
+                SizedBox(height: 10.h),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: _focusOptions.map((minutes) {
+                    final isSelected = _selectedFocusMinutes == minutes;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedFocusMinutes = minutes;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 10.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.secondaryTextColor
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20.r),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.secondaryTextColor
+                                : const Color(0xffD6D6D6),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '$minutes دقيقة',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.primaryColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
                 SizedBox(height: 10.h),
                 Align(
@@ -576,4 +674,11 @@ class _ChildInformationSecondScreenState
       ),
     );
   }
+}
+
+/// Simple data class for a practice time slot option.
+class _PracticeSlot {
+  const _PracticeSlot({required this.label, required this.value});
+  final String label;
+  final String value;
 }

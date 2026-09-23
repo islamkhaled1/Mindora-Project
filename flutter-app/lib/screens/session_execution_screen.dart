@@ -20,11 +20,14 @@ import 'package:sawa/widgets/custom_title.dart';
 class SessionExecutionScreen extends StatefulWidget {
   final SessionModel session;
   final ActivityModel activity;
+  /// Optional: focus duration from ChildModel. If null, no countdown is shown.
+  final int? focusDurationMinutes;
 
   const SessionExecutionScreen({
     super.key,
     required this.session,
     required this.activity,
+    this.focusDurationMinutes,
   });
 
   @override
@@ -36,6 +39,10 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
 
   late Timer _durationTimer;
   int _elapsedSeconds = 0;
+
+  // Focus countdown (deadline-based, separate from elapsed metrics timer)
+  DateTime? _focusDeadline;
+  bool _focusWarningShown = false;
 
   // Movement AI state
   MovementEngine? _movementEngine;
@@ -54,6 +61,11 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
   @override
   void initState() {
     super.initState();
+    // Compute deadline once so lifecycle changes don't drift the countdown
+    final focusMins = widget.focusDurationMinutes;
+    if (focusMins != null && focusMins > 0) {
+      _focusDeadline = DateTime.now().add(Duration(minutes: focusMins));
+    }
     _startDurationTimer();
     if (widget.activity.domainEnum == ActivityDomainEnum.movement) {
       _initMovementAI();
@@ -73,10 +85,41 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
 
   void _startDurationTimer() {
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _elapsedSeconds++;
-        });
+      if (!mounted) return;
+
+      setState(() {
+        _elapsedSeconds++;
+      });
+
+      // Countdown logic: use deadline difference, not tick count, to stay accurate
+      final deadline = _focusDeadline;
+      if (deadline != null && !_isCompleting) {
+        final remaining = deadline.difference(DateTime.now());
+
+        // Warn once at the last 60 seconds (non-intrusive snackbar)
+        if (!_focusWarningShown && remaining.inSeconds <= 60 && remaining.inSeconds > 0) {
+          _focusWarningShown = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                '⏰ تبقى دقيقة واحدة من وقت الجلسة',
+                textDirection: TextDirection.rtl,
+              ),
+              duration: const Duration(seconds: 3),
+              backgroundColor: const Color(0xffE65100),
+            ),
+          );
+        }
+
+        // Auto-complete when time is up.
+        // Null out _focusDeadline BEFORE calling _completeSession() to prevent
+        // an infinite retry loop: if _completeSession() fails it restarts the
+        // timer via _startDurationTimer(), and we must not trigger again.
+        if (remaining.isNegative || remaining.inSeconds <= 0) {
+          _focusDeadline = null;
+          timer.cancel();
+          _completeSession();
+        }
       }
     });
   }
@@ -145,13 +188,34 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
     final metrics = _gatherSessionMetrics();
 
     try {
-      final completedSession = await _sessionService.completeSession(
-        sessionId: widget.session.id,
-        request: CompleteSessionRequest(
-          actualDurationSeconds: _elapsedSeconds,
-          metrics: metrics,
-        ),
-      );
+      CompletedSessionModel completedSession;
+      if (widget.session.id.startsWith('movement-') || widget.session.id.startsWith('local-')) {
+        completedSession = CompletedSessionModel(
+          id: widget.session.id,
+          childId: widget.session.childId,
+          activityId: widget.activity.id,
+          domain: widget.session.domain,
+          status: 'Completed',
+          startTimeUtc: widget.session.startTimeUtc,
+          endTimeUtc: DateTime.now().toUtc(),
+          actualDurationSeconds: _elapsedSeconds > 0 ? _elapsedSeconds : 60,
+          metrics: metrics.map((m) => PerformanceMetricModel(
+            id: 'm-${DateTime.now().millisecondsSinceEpoch}',
+            sessionId: widget.session.id,
+            metricType: m.metricType,
+            value: m.value,
+            timestampUtc: DateTime.now().toUtc(),
+          )).toList(),
+        );
+      } else {
+        completedSession = await _sessionService.completeSession(
+          sessionId: widget.session.id,
+          request: CompleteSessionRequest(
+            actualDurationSeconds: _elapsedSeconds,
+            metrics: metrics,
+          ),
+        );
+      }
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -166,6 +230,35 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
       }
     } on ApiException catch (e) {
       if (mounted) {
+        if (e.statusCode == 404) {
+          final fallbackCompleted = CompletedSessionModel(
+            id: widget.session.id,
+            childId: widget.session.childId,
+            activityId: widget.activity.id,
+            domain: widget.session.domain,
+            status: 'Completed',
+            startTimeUtc: widget.session.startTimeUtc,
+            endTimeUtc: DateTime.now().toUtc(),
+            actualDurationSeconds: _elapsedSeconds > 0 ? _elapsedSeconds : 60,
+            metrics: metrics.map((m) => PerformanceMetricModel(
+              id: 'm-${DateTime.now().millisecondsSinceEpoch}',
+              sessionId: widget.session.id,
+              metricType: m.metricType,
+              value: m.value,
+              timestampUtc: DateTime.now().toUtc(),
+            )).toList(),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SessionEncouragementScreen(
+                completedSession: fallbackCompleted,
+                activity: widget.activity,
+              ),
+            ),
+          );
+          return;
+        }
         setState(() {
           _isCompleting = false;
           _errorMessage = e.firstErrorMessage;
@@ -257,9 +350,18 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
   }
 
   String _formatDuration(int totalSeconds) {
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
+    final s = totalSeconds < 0 ? 0 : totalSeconds;
+    final minutes = s ~/ 60;
+    final seconds = s % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Returns remaining seconds based on deadline. Returns 0 when expired.
+  int _remainingSeconds() {
+    final deadline = _focusDeadline;
+    if (deadline == null) return 0;
+    final diff = deadline.difference(DateTime.now()).inSeconds;
+    return diff < 0 ? 0 : diff;
   }
 
   @override
@@ -423,6 +525,54 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
                 ),
               ),
             ],
+          ),
+          // Countdown row — shown only when focusDurationMinutes was set
+          if (_focusDeadline != null) ...[
+            SizedBox(height: 10.h),
+            _buildCountdownRow(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountdownRow() {
+    final remaining = _remainingSeconds();
+    final isWarning = remaining <= 60;
+    final color = isWarning ? Colors.red.shade600 : AppColors.secondaryTextColor;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: isWarning ? Colors.red.shade50 : const Color(0xffF8F6FF),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(
+          color: isWarning ? Colors.red.shade200 : const Color(0xffE4D4FF),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isWarning ? Icons.hourglass_bottom_rounded : Icons.hourglass_top_rounded,
+            size: 15.r,
+            color: color,
+          ),
+          SizedBox(width: 6.w),
+          Text(
+            'الوقت المتبقي',
+            style: AppTextStyles.font400Regular.copyWith(
+              fontSize: 12.sp,
+              color: color,
+            ),
+            textDirection: TextDirection.rtl,
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            _formatDuration(remaining),
+            style: AppTextStyles.font700Bold.copyWith(
+              fontSize: 14.sp,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -639,11 +789,17 @@ class _SessionExecutionScreenState extends State<SessionExecutionScreen> {
                   );
                 },
                 icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                label: const Text('بدء تمرين اسمع وابحث'),
+                label: const Text(
+                  'بدء تمرين اسمع وابحث',
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryColor,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                  minimumSize: Size(180.w, 40.h),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14.r),
                   ),

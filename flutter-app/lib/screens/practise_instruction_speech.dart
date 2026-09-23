@@ -82,7 +82,7 @@ class PractiseInstructionSpeech extends StatelessWidget {
               ),
               ExerciseNote(
                 text:
-                    'هذا التمرين جزء من خطة عمر العلاجية\n لتحسين مهارة التواصل والتعبير.',
+                    'هذا التمرين جزء من خطة الأنشطة المنزلية\n لتحسين مهارة التواصل والتعبير.',
               ),
               SizedBox(height: 16.h),
               const AiStatusBanner(

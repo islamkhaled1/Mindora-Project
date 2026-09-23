@@ -44,7 +44,7 @@ class HandTrackerService {
   // Target interval of 80ms gives ~12.5 FPS, ideal for mobile CV without heating
   final int targetFrameIntervalMs;
 
-  HandTrackerService({this.targetFrameIntervalMs = 80});
+  HandTrackerService({this.targetFrameIntervalMs = 50}); // ~20 FPS (was 80ms/12.5FPS)
 
   // --- Getters ---
 
@@ -152,6 +152,11 @@ class HandTrackerService {
   }
 
   /// Stop streaming camera frames.
+  // ── Diagnostic instrumentation (temporary) ────────────────────────────────
+  int _diagFrameCount = 0;
+  static const int _diagEveryN = 6; // ~5 logs/sec at 30fps
+  // ──────────────────────────────────────────────────────────────────────────
+
   Future<void> stopTracking() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) return;
 
@@ -202,15 +207,32 @@ class HandTrackerService {
         'timestampMs': nowMs,
       });
 
+      // ── DIAG: log what we sent (rate-limited) ─────────────────────────────────
+      _diagFrameCount++;
+      final bool isDiag = (_diagFrameCount % _diagEveryN == 0);
+      // ────────────────────────────────────────────────────────────────────────
+
       if (nativeResult != null && nativeResult['isTracked'] == true) {
+        final double rawX = (nativeResult['x'] as num).toDouble();
+        final double rawY = (nativeResult['y'] as num).toDouble();
         final lm8x = (nativeResult['landmark8_x'] as num?)?.toDouble();
         final lm8y = (nativeResult['landmark8_y'] as num?)?.toDouble();
         final lm9x = (nativeResult['landmark9_x'] as num?)?.toDouble();
         final lm9y = (nativeResult['landmark9_y'] as num?)?.toDouble();
 
+        // ── DIAG: raw output ─────────────────────────────────────────────────
+        if (isDiag) {
+          debugPrint(
+            '[COORD_DIAG] SERVICE_RECV | '
+            'native_rawX=${rawX.toStringAsFixed(4)} | native_rawY=${rawY.toStringAsFixed(4)} | '
+            'transform=NONE'
+          );
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         final result = HandTrackingResult(
-          x: (nativeResult['x'] as num).toDouble(),
-          y: (nativeResult['y'] as num).toDouble(),
+          x: rawX,
+          y: rawY,
           confidence: (nativeResult['confidence'] as num).toDouble(),
           isTracked: true,
           landmarkUsed: (nativeResult['landmarkUsed'] as num?)?.toInt() ?? 8,

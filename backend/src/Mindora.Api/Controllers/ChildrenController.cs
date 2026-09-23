@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Mindora.Application.Features.Activities.GetChildActivityPerformance;
 using Mindora.Application.Features.Activities.Models;
 using Mindora.Application.Features.Assessments.GetChildBaselineAssessment;
+using Mindora.Application.Features.Assessments.GetHomePracticeRecommendation;
 using Mindora.Application.Features.Assessments.Models;
 using Mindora.Application.Features.Assessments.RecordBaselineAssessment;
 using Mindora.Application.Features.Children.AssignDoctor;
@@ -146,6 +147,20 @@ public class ChildrenController : ControllerBase
     public async Task<IActionResult> GetBaselineAssessment(
         [FromRoute] Guid childId,
         [FromServices] GetChildBaselineAssessmentHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var response = await handler.HandleAsync(childId, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpGet("{childId:guid}/home-practice-recommendation")]
+    [ProducesResponseType(typeof(HomePracticeRecommendationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetHomePracticeRecommendation(
+        [FromRoute] Guid childId,
+        [FromServices] HomePracticeRecommendationHandler handler,
         CancellationToken cancellationToken)
     {
         var response = await handler.HandleAsync(childId, cancellationToken);

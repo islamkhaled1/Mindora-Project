@@ -99,11 +99,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     setState(() => _isStartingSession = true);
 
     try {
+      int? focusDurationMinutes;
       var activeChildId = await _storage.getActiveChildId();
       if (activeChildId == null || activeChildId.trim().isEmpty) {
         final children = await _childrenService.getChildren();
         if (children.isNotEmpty) {
           activeChildId = children.first.id;
+          focusDurationMinutes = children.first.focusDurationMinutes;
           await _storage.saveActiveChildId(activeChildId);
         } else {
           if (mounted) {
@@ -117,6 +119,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           }
           return;
         }
+      } else {
+        try {
+          final child = await _childrenService.getChildById(activeChildId.trim());
+          focusDurationMinutes = child.focusDurationMinutes;
+        } catch (_) {}
       }
 
       SessionModel session;
@@ -134,6 +141,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           final children = await _childrenService.getChildren();
           if (children.isNotEmpty) {
             activeChildId = children.first.id;
+            focusDurationMinutes = children.first.focusDurationMinutes;
             await _storage.saveActiveChildId(activeChildId);
             session = await _sessionService.startSession(
               StartSessionRequest(
@@ -168,6 +176,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
             MaterialPageRoute(
               builder: (context) => SessionExecutionScreen(
                 session: session,
+                focusDurationMinutes: focusDurationMinutes,
                 activity: _activity ?? widget.initialActivity ?? ActivityModel(
                   id: widget.activityId,
                   title: 'النشاط التدريبي',

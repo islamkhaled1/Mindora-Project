@@ -1101,7 +1101,7 @@ class _AiChatScreenState extends State<AiChatScreen> with TickerProviderStateMix
               ),
               SizedBox(height: 6.h),
               Text(
-                'تنبيه: لا يتم إجراء حفظ تلقائي على الخطة العلاجية بالخلفية عبر المحادثة، يمكنك الآن الانتقال لقائمة الأنشطة لبدء التمرين وتسجيل جلسة قياس حقيقية.',
+                'تنبيه: لا يتم إجراء حفظ تلقائي على خطة الأنشطة بالخلفية عبر المحادثة، يمكنك الآن الانتقال لقائمة الأنشطة لبدء التمرين وتسجيل جلسة قياس حقيقية.',
                 style: AppTextStyles.font400Regular.copyWith(
                   fontSize: 11.5.sp,
                   color: AppColors.secondaryColor,

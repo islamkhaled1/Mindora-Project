@@ -52,7 +52,7 @@ class _DoctorOrAiScreenState extends State<DoctorOrAiScreen> {
 
                 ChoiceOption(
                   title: 'لا، ليس لدينا طبيب',
-                  subtitle: 'المتابعة باستخدام التقييم بواسطة الذكاء الاصطناعي',
+                  subtitle: 'إجراء التقييم الأولي لمستوى الأداء',
                   value: 'no_doctor',
                 ),
               ],

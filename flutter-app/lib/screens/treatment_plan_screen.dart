@@ -80,7 +80,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'تعذر تحميل بيانات الخطة العلاجية: $e';
+          _errorMessage = 'تعذر تحميل بيانات خطة الأنشطة: $e';
           _isLoading = false;
         });
       }
@@ -262,7 +262,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
               )
             : const SizedBox.shrink(),
         title: Text(
-          'الخطة العلاجية',
+          'خطة الأنشطة',
           style: AppTextStyles.font700Bold.copyWith(
             fontSize: 18.sp,
             color: AppColors.primaryColor,
@@ -308,7 +308,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
                     children: [
                       // Subtitle Header
                       Text(
-                        'خطة مخصصة لطفلك بناءً على نتائج التقييم السريري، لمساعدته على التطور خطوة بخطوة.',
+                        'خطة أنشطة منزلية مبدئية لطفلك بناءً على نتائج التقييم الأولي، لمساعدته على التطور خطوة بخطوة.',
                         style: AppTextStyles.font400Regular.copyWith(
                           fontSize: 13.sp,
                           color: AppColors.secondaryColor,
@@ -321,7 +321,7 @@ class _TreatmentPlanScreenState extends State<TreatmentPlanScreen> {
 
                       // Section Title
                       Text(
-                        'مجالات الخطة العلاجية',
+                        'مجالات الأنشطة',
                         style: AppTextStyles.font700Bold.copyWith(
                           fontSize: 16.sp,
                           color: AppColors.primaryColor,

@@ -35,6 +35,10 @@ class ApiEndpoints {
   static String baselineAssessment(String childId) =>
       '/api/children/$childId/baseline-assessment';
 
+  // Home Practice Recommendation (personalization engine)
+  static String homePracticeRecommendation(String childId) =>
+      '/api/children/$childId/home-practice-recommendation';
+
   // Activities
   static const String activities = '/api/activities';
   static String activityById(String activityId) =>

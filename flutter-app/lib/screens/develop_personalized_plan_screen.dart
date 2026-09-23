@@ -127,7 +127,7 @@ class DevelopPersonalizedPlanScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'تم إنشاء خطة علاجية مخصصة لطفلك',
+                    'تم إعداد خطة أنشطة منزلية لطفلك',
                     style: AppTextStyles.font700Bold.copyWith(
                       fontSize: 16.sp,
                       color: AppColors.primaryColor,
@@ -189,7 +189,7 @@ class DevelopPersonalizedPlanScreen extends StatelessWidget {
                 _buildStepItem(
                   icon: Icons.assignment_outlined,
                   title: 'خطة جاهزة',
-                  subtitle: 'تم إنشاء خطة مخصصة لطفلك',
+                  subtitle: 'خطة أنشطة جاهزة لطفلك',
                 ),
               ],
             ),
@@ -249,26 +249,31 @@ class DevelopPersonalizedPlanScreen extends StatelessWidget {
             SizedBox(height: 28.h),
 
             // CTA Button: ابدأ رحلتنا معاً
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  (route) => false,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondaryTextColor,
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.r),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondaryTextColor,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  elevation: 2,
                 ),
-                elevation: 2,
-              ),
-              child: Text(
-                'ابدأ رحلتنا معاً',
-                style: AppTextStyles.font700Bold.copyWith(
-                  fontSize: 16.sp,
-                  color: Colors.white,
+                child: Text(
+                  'ابدأ رحلتنا معاً',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.font700Bold.copyWith(
+                    fontSize: 16.sp,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

@@ -47,6 +47,7 @@ public static class DependencyInjection
         // Assessments Feature Handlers
         services.AddScoped<Features.Assessments.RecordBaselineAssessment.RecordBaselineAssessmentHandler>();
         services.AddScoped<Features.Assessments.GetChildBaselineAssessment.GetChildBaselineAssessmentHandler>();
+        services.AddScoped<Features.Assessments.GetHomePracticeRecommendation.HomePracticeRecommendationHandler>();
 
         // Progress Feature Handlers
         services.AddScoped<Features.Progress.GetChildProgress.GetChildProgressHandler>();

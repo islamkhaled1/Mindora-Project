@@ -139,33 +139,35 @@ class _SpeechScreenState extends State<SpeechScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomElevatedButton(
-                    backgroundColor: Colors.white,
-                    textColor: AppColors.primaryColor,
-                    width: 140.w,
-                    title: 'اسمع مرة أخرى',
-                    onPressed: () {},
+                  Expanded(
+                    child: CustomElevatedButton(
+                      backgroundColor: Colors.white,
+                      textColor: AppColors.primaryColor,
+                      title: 'اسمع مرة أخرى',
+                      onPressed: () {},
+                    ),
                   ),
                   SizedBox(width: 12.w),
-                  CustomElevatedButton(
-                    width: 130.w,
-                    title: 'التالي',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EncouragementScreen(
-                            exerciseName: "قولها معايا",
-                            circleAvatarColor: AppColors.circleAvatarColor,
-                            iconColor: AppColors.primaryColor,
-                            icon: AppIcons.speaker,
-                            title: 'تمرين: قولها معايا',
-                            description: 'تم إكمال جميع الأنشطة بنجاح',
-                            targetScreen: PractiseInstructionAttention(),
+                  Expanded(
+                    child: CustomElevatedButton(
+                      title: 'التالي',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EncouragementScreen(
+                              exerciseName: "قولها معايا",
+                              circleAvatarColor: AppColors.circleAvatarColor,
+                              iconColor: AppColors.primaryColor,
+                              icon: AppIcons.speaker,
+                              title: 'تمرين: قولها معايا',
+                              description: 'تم إكمال جميع الأنشطة بنجاح',
+                              targetScreen: PractiseInstructionAttention(),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),

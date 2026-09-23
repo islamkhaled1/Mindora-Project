@@ -30,8 +30,11 @@ class EnvConfig {
     }
   }
 
-  /// Resolves the current base URL depending on runtime override, compile-time define,
-  /// or platform defaults.
+  /// Production backend URL used by default on physical devices and CI.
+  static const String _productionBaseUrl = 'https://sawa-app.runasp.net';
+
+  /// Resolves the current base URL.
+  /// Defaults to production backend: https://sawa-app.runasp.net
   static String get baseUrl {
     if (_runtimeBaseUrlOverride != null && _runtimeBaseUrlOverride!.isNotEmpty) {
       return _runtimeBaseUrlOverride!;
@@ -41,30 +44,8 @@ class EnvConfig {
       return _normalizeUrl(_compileTimeBaseUrl);
     }
 
-    // Default local development endpoints
-    if (kIsWeb) {
-      return 'http://localhost:$defaultPort';
-    }
-
-    try {
-      if (Platform.isAndroid) {
-        // Check if running on an emulator or physical device.
-        // On physical devices, 127.0.0.1 routes over `adb reverse tcp:5222 tcp:5222` to the host PC.
-        final isEmulator = File('/dev/socket/qemud').existsSync() ||
-            File('/sys/qemu_trace').existsSync() ||
-            File('/system/bin/qemu-props').existsSync();
-        if (isEmulator) {
-          return 'http://10.0.2.2:$defaultPort';
-        }
-        return 'http://127.0.0.1:$defaultPort';
-      }
-    } catch (_) {
-      // Fallback for platforms where dart:io Platform is unsupported
-      return 'http://localhost:$defaultPort';
-    }
-
-    // iOS Simulator, macOS, Windows, Linux
-    return 'http://localhost:$defaultPort';
+    // Default directly to the hosted backend server
+    return _productionBaseUrl;
   }
 
   /// Connection timeout duration (15 seconds).

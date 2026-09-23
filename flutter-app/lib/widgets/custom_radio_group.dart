@@ -111,6 +111,8 @@ class _CustomRadioGroupState extends State<CustomRadioGroup> {
                 title,
                 textAlign: TextAlign.center,
                 textDirection: TextDirection.rtl,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.font400Regular.copyWith(
                   color: AppColors.primaryColor,
                   fontSize: 13.sp,
